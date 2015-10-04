@@ -10,4 +10,11 @@ defmodule JulyTest do
     assert July.Lexer.tokenize(input) == output
   end
 
+  test "Tokenize input with various whitespace" do
+    input = "    ( \r\t\n )\n"
+    output = [{:l_paren, "(", 1}, {:r_paren, ")", 2}]
+
+    assert July.Lexer.tokenize(input) == output
+  end
+
 end
