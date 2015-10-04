@@ -21,9 +21,20 @@ defmodule July.Lexer do
     |> tokenize([], 1) # Token accumulator, line number
   end
 
+  
   # End of input, return tokens
   defp tokenize([], token_acc, _) do
     token_acc |> Enum.reverse
+  end
+
+  # Ingore newline, increment line number
+  defp tokenize([?\n |rest], token_acc, line_number) do
+    tokenize(rest, token_acc, line_number + 1)
+  end
+
+  # Ingore all other whitespace
+  defp tokenize([c|rest], token_acc, line_number) when c in '\s\r\t' do
+    tokenize(rest, token_acc, line_number)
   end
 
   # Accept left paren
@@ -44,6 +55,6 @@ defmodule July.Lexer do
   # Accept right bracket
   defp tokenize([?\] |rest], token_acc, line_number) do
     tokenize(rest, [{:r_bracket, "]", line_number}|token_acc], line_number)
-  end  
+  end
 
 end
