@@ -19,9 +19,9 @@ defmodule JulyTest do
   end
 
   test "Tokenize input with integers and floats" do
-    input = "(12\n\n65.323 (12.3))"
-    output = [{:l_paren, "(", 1}, {:integer, "12", 1},
-              {:float, "65.323", 3}, {:l_paren, "(", 3},
+    input = "(-12\n\n-65.323 (12.3))"
+    output = [{:l_paren, "(", 1}, {:integer, "-12", 1},
+              {:float, "-65.323", 3}, {:l_paren, "(", 3},
               {:float, "12.3", 3}, {:r_paren, ")", 3},
               {:r_paren, ")", 3}]
 

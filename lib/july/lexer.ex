@@ -57,7 +57,7 @@ defmodule July.Lexer do
   end
 
   # Tokenize a number
-  defp tokenize([c|rest], token_acc, tokens, line_number) when c in '0123456789' do
+  defp tokenize([c|rest], token_acc, tokens, line_number) when c in '-0123456789' do
     integer_digits(rest, [c|token_acc], tokens, line_number)
   end
 
