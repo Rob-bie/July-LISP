@@ -28,4 +28,12 @@ defmodule JulyTest do
     assert July.Lexer.tokenize(input) == output
   end
 
+  test "Tokenize string with escape sequences" do
+    input = "(\"st\\\na\\\"aaar\")"
+    output = [{:l_paren, "(", 1}, {:string, "st\na\"aaar", 1},
+              {:r_paren, ")", 1}]
+
+    assert July.Lexer.tokenize(input) == output
+  end
+
 end
