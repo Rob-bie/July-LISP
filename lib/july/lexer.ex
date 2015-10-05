@@ -15,6 +15,17 @@ defmodule July.Lexer do
   #        boolean
   #        string
 
+  # EXAMPLE:
+  #          (if (< 3 4)
+  #            #t
+  #            #f)
+  #
+  #          [{:l_paren, "(", 1}, {:keyword, "if", 1},
+  #           {:l_paren, "(", 1}, {:symbol, "<", 1},
+  #           {:integer, "3", 1}, {:integer, "4", 1},
+  #           {:r_paren, ")", 1}, {:boolean, "#t", 2},
+  #           {:boolean, "#f", 3}, {:r_paren, ")", 3}]
+
   def tokenize(july_input) do
     july_input
     |> to_char_list
@@ -64,6 +75,28 @@ defmodule July.Lexer do
   # Tokenize a string
   defp tokenize([?\" |rest], token_acc, tokens, line_number) do
     string_chars(rest, token_acc, tokens, line_number)
+  end
+
+  # Tokenize a boolean (#t|#f)
+  defp tokenize([?\#, ?t |rest], token_acc, tokens, line_number) do
+    tokenize(rest, token_acc, [{:boolean, "#t", line_number}|tokens], line_number)
+  end
+
+  defp tokenize([?\#, ?f |rest], token_acc, tokens, line_number) do
+    tokenize(rest, token_acc, [{:boolean, "#f", line_number}|tokens], line_number)
+  end
+
+  # Tokenize a keyword (q|if|cond)
+  defp tokenize([?q |rest], token_acc, tokens, line_number) do
+    tokenize(rest, token_acc, [{:keyword, "q", line_number}|tokens], line_number)
+  end
+
+  defp tokenize([?i, ?f |rest], token_acc, tokens, line_number) do
+    tokenize(rest, token_acc, [{:keyword, "if", line_number}|tokens], line_number)
+  end
+
+  defp tokenize([?c, ?o, ?n, ?d |rest], token_acc, tokens, line_number) do
+    tokenize(rest, token_acc, [{:keyword, "cond", line_number}|tokens], line_number)
   end
 
   # Tokenize a symbol
@@ -120,7 +153,7 @@ defmodule July.Lexer do
     symbol_chars(rest, [c|token_acc], tokens, line_number)
   end
 
-  # Escape sequence support in strings (\", \n, \t, \r, \\)
+  # Escape sequence support in strings (\"|\n|\t|\r|\\)
   defp string_chars([?\\, ?\\ |rest], token_acc, tokens, line_number) do
     string_chars(rest, [?\ |token_acc], tokens, line_number)
   end

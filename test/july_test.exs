@@ -45,4 +45,15 @@ defmodule JulyTest do
     assert July.Lexer.tokenize(input) == output
   end
 
+  test "Tokenize input with keywords and booleans" do
+    input = "(if (< 3 4)\n#t\n#f)"
+    output = [{:l_paren, "(", 1}, {:keyword, "if", 1},
+              {:l_paren, "(", 1}, {:symbol, "<", 1},
+              {:integer, "3", 1}, {:integer, "4", 1},
+              {:r_paren, ")", 1}, {:boolean, "#t", 2},
+              {:boolean, "#f", 3}, {:r_paren, ")", 3}]
+
+    assert July.Lexer.tokenize(input) == output
+  end
+
 end
