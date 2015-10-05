@@ -36,4 +36,13 @@ defmodule JulyTest do
     assert July.Lexer.tokenize(input) == output
   end
 
+  test "Tokenize input with symbols" do
+    input = "(-13.4a <= \"str\" -13.4)"
+    output = [{:l_paren, "(", 1}, {:symbol, "-13.4a", 1},
+              {:symbol, "<=", 1}, {:string, "str", 1},
+              {:float, "-13.4", 1}, {:r_paren, ")", 1}]
+
+    assert July.Lexer.tokenize(input) == output
+  end
+
 end
