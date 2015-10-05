@@ -18,7 +18,7 @@ defmodule July.Parser do
     |> parse([]) # Accumulator
   end
 
-  defp parse([], acc), do: acc |> hd
+  defp parse([], acc), do: acc |> Enum.reverse
 
   # Open paren found, parse and insert expression into AST
   defp parse([{:l_paren, _, _}|rest], acc) do
@@ -28,7 +28,7 @@ defmodule July.Parser do
 
   # Closing paren found, return parsed expression
   defp parse([{:r_paren, _, _}|rest], acc) do
-    {rest, Enum.reverse(acc)}
+    {rest, acc |> Enum.reverse}
   end
 
   # Convert other tokens to their respective types and insert into AST
