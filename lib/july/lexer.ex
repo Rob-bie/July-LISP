@@ -61,6 +61,11 @@ defmodule July.Lexer do
     integer_digits(rest, [c|token_acc], tokens, line_number)
   end
 
+  # Tokenize a string
+  defp tokenize([?\" |rest], token_acc, tokens, line_number) do
+    string_chars(rest, token_acc, tokens, line_number)
+  end
+
   # If a digit is found, prepend it to the token accumulator
   defp integer_digits([c|rest], token_acc, tokens, line_number) when c in '0123456789' do
     integer_digits(rest, [c|token_acc], tokens, line_number)
@@ -108,6 +113,38 @@ defmodule July.Lexer do
   # Wasn't a float, jump to symbol state
   defp float_digits([c|rest], token_acc, tokens, line_number) do
     :to_do
+  end
+
+  # Escape sequence support in strings (\", \n, \t, \r, \\)
+  defp string_chars([?\\, ?\\ |rest], token_acc, tokens, line_number) do
+    string_chars(rest, [?\ |token_acc], tokens, line_number)
+  end
+
+  defp string_chars([?\\, ?\" |rest], token_acc, tokens, line_number) do
+    string_chars(rest, [?\" |token_acc], tokens, line_number)
+  end
+
+  defp string_chars([?\\, ?\n |rest], token_acc, tokens, line_number) do
+    string_chars(rest, [?\n |token_acc], tokens, line_number)
+  end
+
+  defp string_chars([?\\, ?\t |rest], token_acc, tokens, line_number) do
+    string_chars(rest, [?\t |token_acc], tokens, line_number)
+  end
+
+  defp string_chars([?\\, ?\r |rest], token_acc, tokens, line_number) do
+    string_chars(rest, [?\r |token_acc], tokens, line_number)
+  end
+
+  # Accept string
+  defp string_chars([?\" |rest], token_acc, tokens, line_number) do
+    token = get_token(token_acc)
+    tokenize(rest, [], [{:string, token, line_number}|tokens], line_number)
+  end
+
+  # If any other character is found, prepend to token accumulator
+  defp string_chars([c|rest], token_acc, tokens, line_number) do
+    string_chars(rest, [c|token_acc], tokens, line_number)
   end
 
   # Convert a token accumulator to a string
