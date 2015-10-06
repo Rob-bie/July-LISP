@@ -47,7 +47,7 @@ defmodule JulyTest do
 
   test "Tokenize input with keywords and booleans" do
     input = "(if (< 3 4)\n#t\n#f)"
-    output = [{:l_paren, "(", 1}, {:keyword, "if", 1},
+    output = [{:l_paren, "(", 1}, {:symbol, "if", 1},
               {:l_paren, "(", 1}, {:symbol, "<", 1},
               {:integer, "3", 1}, {:integer, "4", 1},
               {:r_paren, ")", 1}, {:boolean, "#t", 2},
