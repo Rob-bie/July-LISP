@@ -2,17 +2,16 @@ defmodule July.Parser do
 
   # Converts a list a tokens into an AST, token values are converted
   # to their native types during this phase. Discards type information
-  # but preserves line numbers. The only exception is symbols and strings,
-  # type information is preserved solely to differentiate the two.
+  # but preserves line numbers.
 
   # EXAMPLE:
   #          (+ 1
   #            (+ 2
   #              (+ 3 4)))
   #
-  #          [{:symbol, "+", 1}, {1, 1},
-  #           [{:symbol, "+", 2},  2, 2},
-  #            [{:symbol, "+", 3}, {3, 3}, {4, 3}]]]
+  #          [{"+", 1}, {1, 1},
+  #           [{"+", 2},  2, 2},
+  #            [{"+", 3}, {3, 3}, {4, 3}]]]
 
   def parse(july_input) do
     July.Lexer.tokenize(july_input)
@@ -58,6 +57,6 @@ defmodule July.Parser do
   end
 
   # Simply return the token if it doesn't require conversion
-  defp convert_type(token), do: token
+  defp convert_type({_, value, line_number}), do: {value, line_number}
 
 end
