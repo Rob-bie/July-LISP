@@ -1,17 +1,17 @@
 defmodule July.Parser do
 
   # Converts a list a tokens into an AST, token values are converted
-  # to their native types during this phase. Preserves type
-  # information and line numbers.
+  # to their native types during this phase. Discards type information
+  # but preserves line numbers.
 
   # EXAMPLE:
   #          (+ 1
   #            (+ 2
   #              (+ 3 4)))
   #
-  #          [{:symbol, "+", 1}, {:integer, 1, 1},
-  #           [{:symbol, "+", 2}, {:integer, 2, 2},
-  #            [{:symbol, "+", 3}, {:integer, 3, 3}, {:integer, 4, 3}]]]
+  #          [{"+", 1}, {1, 1},
+  #           [{"+", 2},  2, 2},
+  #            [{"+", 3}, {3, 3}, {4, 3}]]]
 
   def parse(july_input) do
     July.Lexer.tokenize(july_input)
@@ -39,24 +39,24 @@ defmodule July.Parser do
 
   # Converts token values to their native Elixir types
   defp convert_type({:boolean, "#t", line_number}) do
-    {:boolean, true, line_number}
+    {true, line_number}
   end
 
   defp convert_type({:boolean, "#f", line_number}) do
-    {:boolean, false, line_number}
+    {false, line_number}
   end
 
   defp convert_type({:integer, value, line_number}) do
     value = String.to_integer(value)
-    {:integer, value, line_number}
+    {value, line_number}
   end
 
   defp convert_type({:float, value, line_number}) do
     value = String.to_float(value)
-    {:float, value, line_number}
+    {value, line_number}
   end
 
   # Simply return the token if it doesn't require conversion
-  defp convert_type(token), do: token
+  defp convert_type({_, value, line_number}), do: {value, line_number}
 
 end
