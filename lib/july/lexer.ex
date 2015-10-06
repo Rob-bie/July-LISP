@@ -67,9 +67,20 @@ defmodule July.Lexer do
     tokenize(rest, token_acc, [{:r_bracket, "]", line_number}|tokens], line_number)
   end
 
-  # Tokenize a number
+  # Tokenize a number OR jump to symbol state for symbol "-"
   defp tokenize([c|rest], token_acc, tokens, line_number) when c in '-0123456789' do
-    integer_digits(rest, [c|token_acc], tokens, line_number)
+    case c do
+      ?- ->
+        [lookahead|_] = rest
+        cond do
+          lookahead in '0123456789' ->
+            integer_digits(rest, [c|token_acc], tokens, line_number)
+          true ->
+            symbol_chars(rest, [c|token_acc], tokens, line_number)
+        end
+      _ ->
+        integer_digits(rest, [c|token_acc], tokens, line_number)
+    end
   end
 
   # Tokenize a string
