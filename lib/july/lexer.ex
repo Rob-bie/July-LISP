@@ -86,27 +86,6 @@ defmodule July.Lexer do
     tokenize(rest, token_acc, [{:boolean, "#f", line_number}|tokens], line_number)
   end
 
-  # Tokenize a keyword (q|if|cond|fn|def)
-  defp tokenize([?q |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "q", line_number}|tokens], line_number)
-  end
-
-  defp tokenize([?i, ?f |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "if", line_number}|tokens], line_number)
-  end
-
-  defp tokenize([?c, ?o, ?n, ?d |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "cond", line_number}|tokens], line_number)
-  end
-
-  defp tokenize([?f, ?n |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "fn", line_number}|tokens], line_number)
-  end
-
-  defp tokenize([?d, ?e, ?f |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "def", line_number}|tokens], line_number)
-  end
-
   # Tokenize a symbol
   defp tokenize([c|rest], token_acc, tokens, line_number) do
     symbol_chars(rest, [c|token_acc], tokens, line_number)
