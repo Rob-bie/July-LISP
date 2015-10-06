@@ -12,6 +12,8 @@ defmodule July.Evaluator do
     eval_block = fn(expression, acc) ->
       res = eval(expression, acc.env)
       case res do
+        closure=%{params: _, body: _, closure: _} ->
+          %{value: res, env: acc.env}
         res when is_map(res) ->
           %{value: acc.value, env: res}
         _ ->
@@ -36,6 +38,16 @@ defmodule July.Evaluator do
         end
       _ ->
         :to_do # Throw errror here (invalid argument quantity passed to <def>)
+    end
+  end
+
+  # Evaluate if
+  defp eval([{:keyword, "if", line_number}|rest], env) do
+    [expr, truthy, falsy] = rest
+    case eval(expr, env) do
+      true  -> eval(truthy, env)
+      false -> eval(falsy, env)
+      _     -> :to_do # Throw error here (expression must evaluate to boolean value)
     end
   end
 
@@ -64,7 +76,7 @@ defmodule July.Evaluator do
       is_map(result) -> # User defined function found
         args = for arg <- args, do: eval(arg, env)
         params = for param <- result.params, do: elem(param, 1)
-        inner = Enum.zip(params, args) |> Enum.into(Map.merge(env, result.closure))
+        inner = Enum.zip(params, args) |> Enum.into(Map.merge(result.closure, env))
         eval(result.body, inner)
       true ->
         result
