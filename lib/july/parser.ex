@@ -16,26 +16,49 @@ defmodule July.Parser do
 
   def parse(july_input) do
     July.Lexer.tokenize(july_input)
-    |> parse([]) # Accumulator
+    |> parse([], []) # Accumulator, stack to match brackets/parens
   end
 
-  defp parse([], acc), do: acc |> Enum.reverse
+  defp parse([], acc, _), do: acc |> Enum.reverse
 
   # Open paren found, parse and insert expression into AST
-  defp parse([{:l_paren, _, _}|rest], acc) do
-    {remainder, list} = parse(rest, [])
-    parse(remainder, [list|acc])
+  defp parse([paren={:l_paren, _, _}|rest], acc, lb_stack) do
+    {remainder, list} = parse(rest, [], [paren|lb_stack])
+    parse(remainder, [list|acc], [])
   end
 
   # Closing paren found, return parsed expression
-  defp parse([{:r_paren, _, _}|rest], acc) do
-    {rest, acc |> Enum.reverse}
+  defp parse([{:r_paren, _, _}|rest], acc, lb_stack) do
+    case lb_stack do
+      [{:l_paren, _, _}|_]  -> {rest, acc |> Enum.reverse}
+      [{_, bad_token, line_number}|_] ->
+        :to_do # Throw error here (mismatched brackets/parens)
+      [] ->
+        :to_do # Throw error here (unbalanced parens)
+    end
   end
 
+  # Open bracket found, parse and insert expression into AST
+  defp parse([bracket={:l_bracket, _, _}|rest], acc, lb_stack) do
+    {remainder, list} = parse(rest, [], [bracket|lb_stack])
+    parse(remainder, [list|acc], [])
+  end
+
+  # Closing bracket found, return parsed expression
+  defp parse([{:r_bracket, _, _}|rest], acc, lb_stack) do
+    case lb_stack do
+      [{:l_bracket, _, _}|_]  -> {rest, acc |> Enum.reverse}
+      [{_, bad_token, line_number}|_] ->
+        :to_do # Throw error here (mismatched brackets/parens)
+      [] ->
+        :to_do # Throw error here (unbalanced brackets)
+    end
+  end
+  
   # Convert other tokens to their respective types and insert into AST
-  defp parse([token|rest], acc) do
+  defp parse([token|rest], acc, lb_stack) do
     converted_token = convert_type(token)
-    parse(rest, [converted_token|acc])
+    parse(rest, [converted_token|acc], lb_stack)
   end
 
   # Converts token values to their native Elixir types

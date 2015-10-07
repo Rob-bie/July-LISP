@@ -135,7 +135,7 @@ defmodule July.Lexer do
   end
 
   # Accept integer
-  defp integer_digits(chars=[c|_], token_acc, tokens, line_number) when c in '()\s\r\t' do
+  defp integer_digits(chars=[c|_], token_acc, tokens, line_number) when c in '[]()\s\r\t' do
     token = get_token(token_acc)
     tokenize(chars, [], [{:integer, token, line_number}|tokens], line_number)
   end
@@ -162,7 +162,7 @@ defmodule July.Lexer do
   end
 
   # Accept float
-  defp float_digits(chars=[c|_], token_acc, tokens, line_number) when c in '()\s\r\t' do
+  defp float_digits(chars=[c|_], token_acc, tokens, line_number) when c in '[]()\s\r\t' do
     token = get_token(token_acc)
     tokenize(chars, [], [{:float, token, line_number}|tokens], line_number)
   end
