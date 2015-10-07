@@ -13,16 +13,15 @@ defmodule July.Evaluator do
       res = eval(expression, acc.env)
       case res do
         closure=%{params: _, body: _, closure: _} ->
-          %{value: res, env: acc.env}
+          %{value: closure, env: acc.env}
         res when is_map(res) ->
           %{value: acc.value, env: res}
         _ ->
           %{value: res, env: acc.env}
-      end
     end
     result = Enum.reduce(expressions, %{value: :void, env: env}, eval_block)
     {result.value, result.env}
-  end
+   end
 
   # Evaluate def, insert variable and value into current environment
   defp eval([{:keyword, "def", line_number}|rest], env) do
@@ -34,10 +33,10 @@ defmodule July.Evaluator do
           {:symbol, variable, _} ->
             Dict.put(env, variable, eval(value, env))
           _ ->
-            :to_do # Throw error here (def must be of the form: <def> <symbol> <val>)
+            :to_doa # Throw error here (def must be of the form: <def> <symbol> <val>)
         end
       _ ->
-        :to_do # Throw errror here (invalid argument quantity passed to <def>)
+        :to_dob # Throw errror here (invalid argument quantity passed to <def>)
     end
   end
 
@@ -47,7 +46,7 @@ defmodule July.Evaluator do
     case eval(expr, env) do
       true  -> eval(truthy, env)
       false -> eval(falsy, env)
-      _     -> :to_do # Throw error here (expression must evaluate to boolean value)
+      _     -> :to_doc # Throw error here (expression must evaluate to boolean value)
     end
   end
 
@@ -57,11 +56,22 @@ defmodule July.Evaluator do
     %{params: parameters, body: body, closure: env}
   end
 
+  # Evaluate q (quote), return following as literal
+  defp eval([{:keyword, "q'", line_number}, rest], _) do
+    unpack = fn 
+      {:symbol, symbol, _} -> symbol
+      {:string, string, _} -> string
+      {literal, _} -> literal
+    end
+    Enum.map(rest, unpack)
+  end
+
   # Look up symbol and return value
   defp eval({:symbol, symbol, line_number}, env) do
     value = lookup_symbol(symbol, env)
     case value do
-      nil -> :to_do # Throw error here (symbol not defined or not in scope)
+      nil ->
+        :to_doe # Throw error here (symbol not defined or not in scope)
       _   -> value
     end
   end
