@@ -18,6 +18,7 @@ defmodule July.Evaluator do
           %{value: acc.value, env: res}
         _ ->
           %{value: res, env: acc.env}
+      end
     end
     result = Enum.reduce(expressions, %{value: :void, env: env}, eval_block)
     {result.value, result.env}
