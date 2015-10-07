@@ -22,9 +22,12 @@ defmodule July.Parser do
   defp parse([], acc, _), do: acc |> Enum.reverse
 
   # Open paren found, parse and insert expression into AST
-  defp parse([paren={:l_paren, _, _}|rest], acc, lb_stack) do
-    {remainder, list} = parse(rest, [], [paren|lb_stack])
-    parse(remainder, [list|acc], [])
+  defp parse([paren={:l_paren, _, line_number}|rest], acc, lb_stack) do
+    case parse(rest, [], [paren|lb_stack]) do
+      {remainder, list} -> parse(remainder, [list|acc], lb_stack)
+      _ ->
+        :to_do # Throw error here (parens not balanced)
+    end
   end
 
   # Closing paren found, return parsed expression
@@ -34,14 +37,17 @@ defmodule July.Parser do
       [{_, bad_token, line_number}|_] ->
         :to_do # Throw error here (mismatched brackets/parens)
       [] ->
-        :to_do # Throw error here (unbalanced parens)
+        :to_do # Throw error here (extra trailing paren or missing leading)
     end
   end
 
   # Open bracket found, parse and insert expression into AST
-  defp parse([bracket={:l_bracket, _, _}|rest], acc, lb_stack) do
-    {remainder, list} = parse(rest, [], [bracket|lb_stack])
-    parse(remainder, [list|acc], [])
+  defp parse([bracket={:l_bracket, _, line_number}|rest], acc, lb_stack) do
+    case parse(rest, [], [bracket|lb_stack]) do
+      {remainder, list} -> parse(remainder, [list|acc], lb_stack)
+      _ ->
+        :to_do # Throw error here (brackets not balanced)
+    end
   end
 
   # Closing bracket found, return parsed expression
@@ -51,7 +57,7 @@ defmodule July.Parser do
       [{_, bad_token, line_number}|_] ->
         :to_do # Throw error here (mismatched brackets/parens)
       [] ->
-        :to_do # Throw error here (unbalanced brackets)
+        :to_do # Throw error here (extra trailing bracket or missing leading)
     end
   end
   
