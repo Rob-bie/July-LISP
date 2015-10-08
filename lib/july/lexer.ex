@@ -97,9 +97,13 @@ defmodule July.Lexer do
     tokenize(rest, token_acc, [{:boolean, "#f", line_number}|tokens], line_number)
   end
 
-  # Tokenize a keyword (q|if|cond|fn|def)
+  # Tokenize a keyword (|q'|'|if|cond|fn|def)
   defp tokenize([?q, ?\' |rest], token_acc, tokens, line_number) do
     tokenize(rest, token_acc, [{:keyword, "q'", line_number}|tokens], line_number)
+  end
+
+  defp tokenize([?\' |rest], token_acc, tokens, line_number) do
+    tokenize(rest, token_acc, [{:keyword, "'", line_number}|tokens], line_number)
   end
 
   defp tokenize([?i, ?f |rest], token_acc, tokens, line_number) do
@@ -128,6 +132,12 @@ defmodule July.Lexer do
     integer_digits(rest, [c|token_acc], tokens, line_number)
   end
 
+  # Accept integer (literal or early eof)
+  defp integer_digits([], token_acc, tokens, line_number) do
+    token = get_token(token_acc)
+    tokenize([], [], [{:integer, token, line_number}|tokens], line_number)
+  end
+
   # Accept integer, increment line number
   defp integer_digits([?\n |rest], token_acc, tokens, line_number) do
     token = get_token(token_acc)
@@ -153,6 +163,12 @@ defmodule July.Lexer do
   # If a digit is found, prepend it to the token accumulator
   defp float_digits([c|rest], token_acc, tokens, line_number) when c in '0123456789' do
     float_digits(rest, [c|token_acc], tokens, line_number)
+  end
+
+  # Accept float (literal or early eof)
+  defp float_digits([], token_acc, tokens, line_number) do
+    token = get_token(token_acc)
+    tokenize([], [], [{:float, token, line_number}|tokens], line_number)
   end
 
   # Accept float, increment line number
@@ -202,6 +218,12 @@ defmodule July.Lexer do
   # If any other character is found, prepend to token accumulator
   defp string_chars([c|rest], token_acc, tokens, line_number) do
     string_chars(rest, [c|token_acc], tokens, line_number)
+  end
+
+  # Accept symbol (literal or early eof)
+  defp symbol_chars([], token_acc, tokens, line_number) do
+    token = get_token(token_acc)
+    tokenize([], [], [{:symbol, token, line_number}|tokens], line_number)
   end
 
   # Accept symbol, increment line number
