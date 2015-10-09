@@ -33,7 +33,7 @@ defmodule July.Parser do
   # Closing paren found, return parsed expression
   defp parse([{:r_paren, _, _}|rest], acc, lb_stack) do
     case lb_stack do
-      [{:l_paren, _, _}|_]  -> {rest, acc |> Enum.reverse}
+      [{:l_paren, _, _}|_] -> {rest, acc |> Enum.reverse}
       [{_, bad_token, line_number}|_] ->
         :to_do # Throw error here (mismatched brackets/parens)
       [] ->
@@ -53,7 +53,7 @@ defmodule July.Parser do
   # Closing bracket found, return parsed expression
   defp parse([{:r_bracket, _, _}|rest], acc, lb_stack) do
     case lb_stack do
-      [{:l_bracket, _, _}|_]  -> {rest, acc |> Enum.reverse}
+      [{:l_bracket, _, _}|_] -> {rest, acc |> Enum.reverse}
       [{_, bad_token, line_number}|_] ->
         :to_do # Throw error here (mismatched brackets/parens)
       [] ->
