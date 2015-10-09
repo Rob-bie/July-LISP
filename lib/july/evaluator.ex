@@ -7,6 +7,12 @@ defmodule July.Evaluator do
     |> eval_all(July.Stdlib.Core.core) # Core is the default, outermost environment
   end
 
+  # For evaluating inside of REPL environment
+  def eval(july_input, env, :repl) do
+    July.Parser.parse(july_input)
+    |> eval_all(env)
+  end
+
   # Evaluates a sequence of expressions
   defp eval_all(expressions, env) do
     eval_block = fn(expression, acc) ->
@@ -59,12 +65,7 @@ defmodule July.Evaluator do
 
   # Evaluate q (quote), return following as literal
   defp eval([{:keyword, "q'", line_number}, rest], _) do
-    unpack = fn 
-      {:symbol, symbol, _} -> symbol
-      {:string, string, _} -> string
-      {literal, _} -> literal
-    end
-    Enum.map(rest, unpack)
+    unpack(rest, [])
   end
 
   # Look up symbol and return value
@@ -87,16 +88,29 @@ defmodule July.Evaluator do
       is_map(result) -> # User defined function found
         args = for arg <- args, do: eval(arg, env)
         params = for param <- result.params, do: elem(param, 1)
-        inner = Enum.zip(params, args) |> Enum.into(Map.merge(result.closure, env))
-        eval(result.body, inner)
+        closure = Enum.zip(params, args) |> Enum.into(Map.merge(result.closure, env))
+        eval(result.body, closure)
       true ->
-        result
+        :to_dof # Throw error here (expected function)
     end
   end
 
   # Return literal
-  defp eval({literal, _}, _), do: literal
-  defp eval(literal, _),      do: literal
+  defp eval({:string, literal, _}, _), do: literal
+  defp eval({literal, _}, _),  do: literal
+  defp eval(literal, _), do: literal
+
+  # Unpack values for quote
+  defp unpack([], acc), do: Enum.reverse(acc)
+
+  defp unpack({:symbol, symbol, _}, _),   do: String.to_atom(symbol)
+  defp unpack({:string, string, _}, _),   do: string
+  defp unpack({:keyword, keyword, _}, _), do: keyword
+  defp unpack({literal,  _}, _),          do: literal
+
+  defp unpack(list, acc) do
+    Enum.map(list, &unpack(&1, []))
+  end
 
   # Look up a symbol starting in the innermost
   # environment, return nil if not found
