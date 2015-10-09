@@ -233,7 +233,7 @@ defmodule July.Lexer do
   end
 
   # Accept symbol
-  defp symbol_chars(chars=[c|_], token_acc, tokens, line_number) when c in '()\s\r\t' do
+  defp symbol_chars(chars=[c|_], token_acc, tokens, line_number) when c in '[]()\s\r\t' do
     token = get_token(token_acc)
     tokenize(chars, [], [{:symbol, token, line_number}|tokens], line_number)
   end
