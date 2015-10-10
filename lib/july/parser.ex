@@ -60,6 +60,23 @@ defmodule July.Parser do
         :to_do # Throw error here (extra trailing bracket or missing leading)
     end
   end
+
+  # Expands ' to (q' ...)
+  defp parse([{:keyword, "'", line_number}|rest], acc, lb_stack) do
+    list = [lookahead|remainder] = rest
+    quote_body = [{:keyword, "q'", line_number}]
+    case lookahead do
+      {:l_paren, _, _} ->
+        {parse_rem, quote_list} = parse(remainder, [], [lookahead|lb_stack])
+        parse(parse_rem, [quote_body ++ [quote_list]|acc], lb_stack)
+      {:l_bracket, _, _} ->
+        {parse_rem, quote_list} = parse(remainder, [], [lookahead|lb_stack])
+        parse(parse_rem, [quote_body ++ [quote_list]|acc], lb_stack)
+      _ ->
+        converted_token = convert_type(lookahead)
+        parse(remainder, [quote_body ++ [converted_token]|acc], lb_stack)
+    end
+  end
   
   # Convert other tokens to their respective types and insert into AST
   defp parse([token|rest], acc, lb_stack) do
