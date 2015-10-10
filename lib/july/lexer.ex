@@ -97,7 +97,7 @@ defmodule July.Lexer do
     tokenize(rest, token_acc, [{:boolean, "#f", line_number}|tokens], line_number)
   end
 
-  # Tokenize a keyword (|q'|'|if|cond|fn|def)
+  # Tokenize a keyword (q'|'|if|cond|fn|def)
   defp tokenize([?q, ?\' |rest], token_acc, tokens, line_number) do
     tokenize(rest, token_acc, [{:keyword, "q'", line_number}|tokens], line_number)
   end
