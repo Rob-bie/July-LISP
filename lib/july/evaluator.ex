@@ -57,6 +57,12 @@ defmodule July.Evaluator do
     end
   end
 
+  # Evaluate cond, short circuit when truthy expression is found
+  defp eval([{:keyword, "cond", line_number}|rest], env) do
+    [[_, truthy]|_] = Enum.drop_while(rest, fn(p) -> eval(hd(p), env) != true end)
+    eval(truthy, env)
+  end
+
   # Evaluate fn, return function parameters, body and scope
   defp eval([{:keyword, "fn", line_number}|rest], env) do
     [parameters, body] = rest
