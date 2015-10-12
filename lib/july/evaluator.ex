@@ -63,10 +63,17 @@ defmodule July.Evaluator do
     eval(truthy, env)
   end
 
-  # Evaluate fn, return function parameters, body and scope
-  defp eval([{:keyword, "fn", line_number}|rest], env) do
+  # Evaluate fun, return function parameters, body and scope
+  defp eval([{:keyword, "fun", line_number}|rest], env) do
     [parameters, body] = rest
     %{params: parameters, body: body, closure: env}
+  end
+
+  # Evaluate defun, insert function into current environment
+  defp eval([{:keyword, "defun", line_number}|rest], env) do
+    [{:symbol, variable, _}|bodies] = rest
+    val = %{bodies: bodies, closure: env}
+    Dict.put(env, variable, val)
   end
 
   # Evaluate q (quote), return following as literal
@@ -92,10 +99,20 @@ defmodule July.Evaluator do
         args = for arg <- args, do: eval(arg, env)
         apply(result, args)
       is_map(result) -> # User defined function found
-        args = for arg <- args, do: eval(arg, env)
-        params = for param <- result.params, do: elem(param, 1)
-        closure = Enum.zip(params, args) |> Enum.into(Map.merge(result.closure, env))
-        eval(result.body, closure)
+        case result do
+          %{params: params, body: body, closure: closure} -> # fun
+            args = for arg <- args, do: eval(arg, env)
+            params = for param <- result.params, do: elem(param, 1)
+            closure = Enum.zip(params, args) |> Enum.into(Map.merge(result.closure, env))
+            eval(result.body, closure)
+          %{bodies: bodies, closure: closure} -> # defun
+            [match|_] = Enum.drop_while(bodies, fn(body) -> length(args) != length(hd(body)) end)
+            [params, body] = match
+            args = for arg <- args, do: eval(arg, env)
+            params = for param <- params, do: elem(param, 1)
+            closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
+            eval(body, closure)
+        end
       true ->
         :to_dof # Throw error here (expected function)
     end
