@@ -65,6 +65,18 @@ defmodule July.Evaluator do
     result
   end
 
+  # Evaluate let, create a new scope with bindings
+  defp eval([{:keyword, "let", line_number}|rest], env) do
+    [bindings|body] = rest
+    bind = fn(binding, acc) ->
+      [{:symbol, symbol, _}, value] = binding
+      Dict.put(acc, symbol, eval(value, acc))
+    end
+    new_scope = Enum.reduce(bindings, create_scope(env), bind)
+    {result, _} = eval_all(body, new_scope)
+    result
+  end
+
   # Evaluate fun, return function parameters, body and scope
   defp eval([{:keyword, "fun", line_number}|rest], env) do
     [parameters, body] = rest
@@ -122,8 +134,8 @@ defmodule July.Evaluator do
 
   # Return literal
   defp eval({:string, literal, _}, _), do: literal
-  defp eval({literal, _}, _),  do: literal
-  defp eval(literal, _), do: literal
+  defp eval({literal, _}, _),          do: literal
+  defp eval(literal, _),               do: literal
 
   # Create a new scope for explicit and implicit *do blocks
   # * Do has not been implemented yet
