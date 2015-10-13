@@ -58,9 +58,11 @@ defmodule July.Evaluator do
   end
 
   # Evaluate cond, short circuit when truthy expression is found
+  # Body is evaluated inside of a new scope
   defp eval([{:keyword, "cond", line_number}|rest], env) do
-    [[_, truthy]|_] = Enum.drop_while(rest, fn(p) -> eval(hd(p), env) != true end)
-    eval(truthy, env)
+    [[_|truthy]|_] = Enum.drop_while(rest, fn(p) -> eval(hd(p), env) != true end)
+    {result, _} = eval_all(truthy, create_scope(env))
+    result
   end
 
   # Evaluate fun, return function parameters, body and scope
@@ -102,9 +104,9 @@ defmodule July.Evaluator do
         case result do
           %{params: params, body: body, closure: closure} -> # fun
             args = for arg <- args, do: eval(arg, env)
-            params = for param <- result.params, do: elem(param, 1)
-            closure = Enum.zip(params, args) |> Enum.into(Map.merge(result.closure, env))
-            eval(result.body, closure)
+            params = for param <- params, do: elem(param, 1)
+            closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
+            eval(body, closure)
           %{bodies: bodies, closure: closure} -> # defun
             [match|_] = Enum.drop_while(bodies, fn(body) -> length(args) != length(hd(body)) end)
             [params, body] = match
@@ -123,6 +125,10 @@ defmodule July.Evaluator do
   defp eval({literal, _}, _),  do: literal
   defp eval(literal, _), do: literal
 
+  # Create a new scope for explicit and implicit *do blocks
+  # * Do has not been implemented yet
+  defp create_scope(env), do: %{outer: env}
+ 
   # Unpack values for quote
   defp unpack([], acc), do: Enum.reverse(acc)
 

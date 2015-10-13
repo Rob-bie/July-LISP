@@ -19,6 +19,7 @@ defmodule July.Stdlib.Core do
       "head"   => &hd/1,
       "tail"   => &tl/1,
       "push"   => &([&1|&2]),
+      "show"   => &IO.puts/1,
       "empty?" => &(&1 == []),
       "else"   => true
      }
