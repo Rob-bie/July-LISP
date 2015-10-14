@@ -1,4 +1,4 @@
-defmodule July.Repl.JulyREPL do
+defmodule July.Repl.JulyRepl do
 
   # July's REPL, evaluates in it's own environment (default is core)
   # Multi-line expressions are suported.
