@@ -108,7 +108,8 @@ defmodule July.Evaluator do
     case import_type do
       :builtin  ->
         case import_name do
-          :math -> Dict.merge(env, July.Stdlib.Math.math)
+          :math -> Dict.merge(env, July.Stdlib.Math.import_math)
+          :coll -> Dict.merge(env, July.Stdlib.Coll.import_coll)
           _ ->
             import_name = import_name |> to_string
             throw({:error, "ERR: <#{import_name}> is not a valid "
@@ -194,7 +195,7 @@ defmodule July.Evaluator do
             {name, line_number} = fun_information.(function)
             arities = Enum.map(bodies, fn(body) -> length(hd(body)) end)
             arities = "<#{Enum.join(arities, ",")}>"
-            throw({:error, "ERR: <#{name}> called with <#{length(args)}> arguments "
+            throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
                         <> "but expected #{arities} <line: #{line_number}>"})
           _  ->
             [match|_] = match
