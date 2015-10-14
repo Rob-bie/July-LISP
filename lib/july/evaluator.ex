@@ -77,6 +77,19 @@ defmodule July.Evaluator do
     result
   end
 
+  # Evaluate |>, transforms AST such that the result of each
+  # function is passed as the first argument to the next function
+  # in the pipeline
+  defp eval([{:keyword, "|>", line_number}|rest], env) do
+    combine = fn(expr, acc) ->
+      [function|args] = expr
+      [function, acc] ++ args
+    end
+    [initial_value|rest] = rest
+    pipeline = Enum.reduce(rest, initial_value, combine)
+    eval(pipeline, env)
+  end
+
   # Evaluate fun, return function parameters, body and scope
   defp eval([{:keyword, "fun", line_number}|rest], env) do
     [parameters, body] = rest

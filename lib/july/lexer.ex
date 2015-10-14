@@ -130,6 +130,10 @@ defmodule July.Lexer do
     tokenize(rest, token_acc, [{:keyword, "let", line_number}|tokens], line_number)
   end
 
+  defp tokenize([?|, ?> |rest], token_acc, tokens, line_number) do
+    tokenize(rest, token_acc, [{:keyword, "|>", line_number}|tokens], line_number)
+  end
+
   # Tokenize a symbol
   defp tokenize([c|rest], token_acc, tokens, line_number) do
     symbol_chars(rest, [c|token_acc], tokens, line_number)
