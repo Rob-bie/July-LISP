@@ -14,6 +14,9 @@ defmodule July.Stdlib.Core do
       ">="     => %{function: &(&1 >= &2)},
       ">"      => %{function: &(&1 > &2)},
       "="      => %{function: &(&1 == &2)},
+      "or"     => %{function: &july_or/1, variadic: true},
+      "and"    => %{function: &july_and/1, variadic: true},
+      "not"    => %{function: &(!&1)},
       "dec"    => %{function: &(&1 - 1)},
       "inc"    => %{function: &(&1 + 1)},
       "head"   => %{function: &hd/1},
@@ -41,5 +44,12 @@ defmodule July.Stdlib.Core do
     Enum.reduce(args, acc, &(&2 / &1))
   end
 
+  defp july_and(args) do
+    Enum.all?(args, &(&1 == true))
+  end
+
+  defp july_or(args) do
+    Enum.any?(args, &(&1 == true))
+  end
  
 end
