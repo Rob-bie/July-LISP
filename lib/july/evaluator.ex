@@ -121,26 +121,29 @@ defmodule July.Evaluator do
   # Evaluate a function and return it's result
   defp eval([function|args], env) do
     result = eval(function, env)
-    cond do
-      is_function(result) -> # Built-in function found
-        args = for arg <- args, do: eval(arg, env)
-        apply(result, args)
-      is_map(result) -> # User defined function found
-        case result do
-          %{params: params, body: body, closure: closure} -> # fun
+    case result do
+      built_in=%{function: function} -> # Built-in function
+        case built_in[:variadic] do
+          true ->
             args = for arg <- args, do: eval(arg, env)
-            params = for param <- params, do: elem(param, 1)
-            closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
-            eval(body, closure)
-          %{bodies: bodies, closure: closure} -> # defun
-            [match|_] = Enum.drop_while(bodies, fn(body) -> length(args) != length(hd(body)) end)
-            [params, body] = match
+            function.(args)
+          _    ->
             args = for arg <- args, do: eval(arg, env)
-            params = for param <- params, do: elem(param, 1)
-            closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
-            eval(body, closure)
+            apply(function, args)
         end
-      true ->
+      %{params: params, body: body, closure: closure} -> # fun
+        args = for arg <- args, do: eval(arg, env)
+        params = for param <- params, do: elem(param, 1)
+        closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
+        eval(body, closure)
+      %{bodies: bodies, closure: closure} -> # defun
+        [match|_] = Enum.drop_while(bodies, fn(body) -> length(args) != length(hd(body)) end)
+        [params, body] = match
+        args = for arg <- args, do: eval(arg, env)
+        params = for param <- params, do: elem(param, 1)
+        closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
+        eval(body, closure)
+      _ ->
         :to_dof # Throw error here (expected function)
     end
   end
