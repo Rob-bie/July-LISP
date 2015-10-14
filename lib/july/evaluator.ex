@@ -90,6 +90,16 @@ defmodule July.Evaluator do
     eval(pipeline, env)
   end
 
+  # Evaluate list, differs from quote in that elements are
+  # evaluated instead of returned literally
+  defp eval([{:keyword, "list", line_number}|rest], env) do
+    case rest do
+      [] -> []
+      _  -> Enum.map(rest, &eval(&1, env))
+    end
+  end
+
+
   # Evaluate fun, return function parameters, body and scope
   defp eval([{:keyword, "fun", line_number}|rest], env) do
     [parameters, body] = rest
