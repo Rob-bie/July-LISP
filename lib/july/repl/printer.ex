@@ -28,6 +28,10 @@ defmodule July.Repl.Printer do
     "#<july-closure>"
   end
 
+  def convert(string) when is_binary(string) do
+    "\"#{string}\""
+  end
+
   def convert(other) do
     other |> to_string
   end
