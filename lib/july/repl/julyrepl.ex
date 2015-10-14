@@ -5,14 +5,21 @@ defmodule July.Repl.JulyRepl do
 
   def start_repl do
     IO.puts("July REPL")
+    IO.puts("(exit) to quit")
     read_input(1, July.Stdlib.Core.core, [], [])
   end
 
   defp read_input(line_number, repl_env, expr, stack) do
     message = "july@repl(#{line_number})> "
     offset = message |> continuation_offset
-    read_next = IO.gets(message) |> to_char_list
-    process_next(read_next, line_number, repl_env,  [], [], offset)
+    read_next = IO.gets(message)
+    case read_next do
+      "(exit)\n" ->
+        Kernel.exit(:shutdown)
+        # System.halt(0) # Use when not testing?
+      _ ->
+        process_next(read_next |> to_char_list, line_number, repl_env,  [], [], offset)
+    end
   end
 
   # Keep reading from stdin until a complete expression is formed,
