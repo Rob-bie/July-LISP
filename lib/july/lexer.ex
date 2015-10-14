@@ -97,7 +97,7 @@ defmodule July.Lexer do
     tokenize(rest, token_acc, [{:boolean, "#f", line_number}|tokens], line_number)
   end
 
-  # Tokenize a keyword (q'|'|if|cond|fun|defun|def|let||>|list)
+  # Tokenize a keyword (q'|'|if|cond|fun|defun|def|let||>|list|import)
   defp tokenize([?q, ?\' |rest], token_acc, tokens, line_number) do
     tokenize(rest, token_acc, [{:keyword, "q'", line_number}|tokens], line_number)
   end
@@ -136,6 +136,10 @@ defmodule July.Lexer do
 
   defp tokenize([?l, ?i, ?s, ?t |rest], token_acc, tokens, line_number) do
     tokenize(rest, token_acc, [{:keyword, "list", line_number}|tokens], line_number)
+  end
+
+  defp tokenize([?i, ?m, ?p, ?o, ?r, ?t |rest], token_acc, tokens, line_number) do
+    tokenize(rest, token_acc, [{:keyword, "import", line_number}|tokens], line_number)
   end
 
   # Tokenize a symbol

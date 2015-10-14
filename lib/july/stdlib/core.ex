@@ -1,7 +1,7 @@
 defmodule July.Stdlib.Core do
 
   # Core is the default environment that contains standard
-  # July functions.
+  # July functions. 
 
   def core do
     %{

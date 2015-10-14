@@ -99,6 +99,21 @@ defmodule July.Evaluator do
     end
   end
 
+  # Evaluate import, return corresponding environment
+  # A symbol following import keywords indicates a built-in
+  # library, a string indicates a path to an external July library
+  defp eval([{:keyword, "import", line_number}, july_import], env) do
+    import_name = eval(july_import, env)
+    import_type = if is_atom(import_name), do: :builtin, else: :external
+    case import_type do
+      :builtin  ->
+        case import_name do
+          :math -> Dict.merge(env, July.Stdlib.Math.math)
+        end
+      :external ->
+        :to_do
+    end
+  end
 
   # Evaluate fun, return function parameters, body and scope
   defp eval([{:keyword, "fun", line_number}|rest], env) do
