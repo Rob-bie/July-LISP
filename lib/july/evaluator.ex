@@ -109,6 +109,10 @@ defmodule July.Evaluator do
       :builtin  ->
         case import_name do
           :math -> Dict.merge(env, July.Stdlib.Math.math)
+          _ ->
+            import_name = import_name |> to_string
+            throw({:error, "ERR: <#{import_name}> is not a valid "
+                        <> "stdlib module, did you mean (import \"#{import_name}.july\")?"})
         end
       :external ->
         :to_do
@@ -118,7 +122,7 @@ defmodule July.Evaluator do
   # Evaluate fun, return function parameters, body and scope
   defp eval([{:keyword, "fun", line_number}|rest], env) do
     [parameters, body] = rest
-    %{params: parameters, body: body, closure: env}
+    %{params: parameters, body: body, closure: env, line_number: line_number}
   end
 
   # Evaluate defun, insert function into current environment
@@ -138,13 +142,28 @@ defmodule July.Evaluator do
     value = lookup_symbol(symbol, env)
     case value do
       nil ->
-        :to_doe # Throw error here (symbol not defined or not in scope)
+        throw({:error, "ERR: Symbol <#{symbol}> undefined or out of scope <line: #{line_number}>"})
       _   -> value
     end
   end
 
+  # Catch error when function is expected but passed a value
+  defp eval([{type, value, line_number}|_], _) when type != :symbol do
+    throw({:error, "ERR: Expected function but got <#{value}> <line: #{line_number}>"})
+  end
+
+  defp eval([{value, line_number}|_], _) do
+    throw({:error, "ERR: Expected function but got <#{value}> <line: #{line_number}>"})
+  end
+
   # Evaluate a function and return it's result
   defp eval([function|args], env) do
+
+    fun_information = fn
+      {:symbol, name, line_number} -> {"<#{name}>", line_number}
+      _ -> {"#<july-closure>", :ignore}
+    end
+      
     result = eval(function, env)
     case result do
       built_in=%{function: function} -> # Built-in function
@@ -156,20 +175,35 @@ defmodule July.Evaluator do
             args = for arg <- args, do: eval(arg, env)
             apply(function, args)
         end
-      %{params: params, body: body, closure: closure} -> # fun
-        args = for arg <- args, do: eval(arg, env)
-        params = for param <- params, do: elem(param, 1)
-        closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
-        eval(body, closure)
+      %{params: params, body: body, closure: closure, line_number: line_number} -> # fun
+        case length(params) != length(args) do
+          true  ->
+            {name, _} = fun_information.(function)
+            throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
+                        <> "but expected <#{length(params)}> <line: #{line_number}>"})
+          false ->
+            args = for arg <- args, do: eval(arg, env)
+            params = for param <- params, do: elem(param, 1)
+            closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
+            eval(body, closure)
+        end
       %{bodies: bodies, closure: closure} -> # defun
-        [match|_] = Enum.drop_while(bodies, fn(body) -> length(args) != length(hd(body)) end)
-        [params, body] = match
-        args = for arg <- args, do: eval(arg, env)
-        params = for param <- params, do: elem(param, 1)
-        closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
-        eval(body, closure)
-      _ ->
-        :to_dof # Throw error here (expected function)
+        match = Enum.drop_while(bodies, fn(body) -> length(args) != length(hd(body)) end)
+        case match do
+          [] ->
+            {name, line_number} = fun_information.(function)
+            arities = Enum.map(bodies, fn(body) -> length(hd(body)) end)
+            arities = "<#{Enum.join(arities, ",")}>"
+            throw({:error, "ERR: <#{name}> called with <#{length(args)}> arguments "
+                        <> "but expected #{arities} <line: #{line_number}>"})
+          _  ->
+            [match|_] = match
+            [params, body] = match
+            args = for arg <- args, do: eval(arg, env)
+            params = for param <- params, do: elem(param, 1)
+            closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
+            eval(body, closure)
+        end
     end
   end
 

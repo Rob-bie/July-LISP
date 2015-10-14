@@ -26,18 +26,19 @@ defmodule July.Parser do
     case parse(rest, [], [paren|lb_stack]) do
       {remainder, list} -> parse(remainder, [list|acc], lb_stack)
       _ ->
-        :to_do # Throw error here (parens not balanced)
+        throw({:error, "ERR: Unbalanced parens <line: #{line_number}>"})
     end
   end
 
   # Closing paren found, return parsed expression
-  defp parse([{:r_paren, _, _}|rest], acc, lb_stack) do
+  defp parse([{:r_paren, _, line_number}|rest], acc, lb_stack) do
     case lb_stack do
       [{:l_paren, _, _}|_] -> {rest, acc |> Enum.reverse}
       [{_, bad_token, line_number}|_] ->
-        :to_do # Throw error here (mismatched brackets/parens)
+        throw({:error, "ERR: Found <)> but expected <]> <line: #{line_number}>"})
       [] ->
-        :to_do # Throw error here (extra trailing paren or missing leading)
+        throw({:error, "ERR: Extra trailing paren or missing leading leading paren "
+                    <> "<line: #{line_number}>"})
     end
   end
 
@@ -46,18 +47,19 @@ defmodule July.Parser do
     case parse(rest, [], [bracket|lb_stack]) do
       {remainder, list} -> parse(remainder, [list|acc], lb_stack)
       _ ->
-        :to_do # Throw error here (brackets not balanced)
+        throw({:error, "ERR: Unbalanced brackets <line: #{line_number}>"})
     end
   end
 
   # Closing bracket found, return parsed expression
-  defp parse([{:r_bracket, _, _}|rest], acc, lb_stack) do
+  defp parse([{:r_bracket, _, line_number}|rest], acc, lb_stack) do
     case lb_stack do
       [{:l_bracket, _, _}|_] -> {rest, acc |> Enum.reverse}
       [{_, bad_token, line_number}|_] ->
-        :to_do # Throw error here (mismatched brackets/parens)
+        throw({:error, "ERR: Found <]> but expected <)> <line: #{line_number}>"})
       [] ->
-        :to_do # Throw error here (extra trailing bracket or missing leading)
+        throw({:error, "ERR: Extra trailing bracket or missing leading leading bracket "
+                          <> "<line: #{line_number}>"})
     end
   end
 

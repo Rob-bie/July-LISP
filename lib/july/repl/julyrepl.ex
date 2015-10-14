@@ -34,6 +34,11 @@ defmodule July.Repl.JulyRepl do
         read_more = IO.gets(offset) |> to_char_list
         process_next(read_more, line_number, repl_env, expr, stack, offset)
     end
+
+  catch
+    {:error, message} ->
+      IO.puts(message)
+      read_input(line_number + 1, repl_env, [], [])
   end
 
   defp process_next([next|rest], line_number, repl_env, expr, stack, offset) do
@@ -43,18 +48,29 @@ defmodule July.Repl.JulyRepl do
       ?\) ->
         case stack do
           [?\(|stack] -> process_next(rest, line_number, repl_env, [next|expr], stack, offset)
-          _ -> :to_do # Throw error here (dangling paren)
+          [?\[|stack] ->
+            throw({:error, "ERR: Expecting <]> but got <)>"})
+          _ ->
+            throw({:error, "ERR: Extra leading paren or missing trailing paren"})
         end
       ?\[ ->
         process_next(rest, line_number, repl_env, [next|expr], [next|stack], offset)
       ?\] ->
         case stack do
           [?\[|stack] -> process_next(rest, line_number, repl_env, [next|expr], stack, offset)
-          _ -> :todo # Throw error here (dangling bracket)
+          [?\(|stack] ->
+            throw({:error, "ERR: Expecting <)> but got <]>"})
+          _ ->
+            throw({:error, "ERR: Extra leading bracket or missing trailing bracket"})
         end
       _ ->
         process_next(rest, line_number, repl_env, [next|expr], stack, offset)
     end
+
+  catch
+    {:error, message} ->
+      IO.puts(message)
+      read_input(line_number + 1, repl_env, [], [])
   end
 
   # Returns the base offset for aligning multi-line expressions in REPL
