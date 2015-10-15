@@ -12,7 +12,7 @@ defmodule July.Repl.Printer do
   def convert(list) when is_list(list) do
     case length(list) > 25 do
       true  ->
-        truncated_list = Enum.take(25)
+        truncated_list = Enum.take(list, 25)
         "(#{Enum.map(truncated_list, &convert/1) |> Enum.join(" ")} ...)"
       false ->
         "(#{Enum.map(list, &convert/1) |> Enum.join(" ")})"
