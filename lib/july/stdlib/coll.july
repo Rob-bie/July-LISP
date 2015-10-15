@@ -1,25 +1,38 @@
 (defun foldl
   ([coll f] (foldl (tail coll) f (head coll)))
   ([coll f acc]
-    (cond
-      [(empty? coll) acc]
-      [else (foldl (tail coll) f (f (head coll) acc))])))
+    (if (empty? coll)
+      acc
+      (foldl (tail coll) f (f (head coll) acc)))))
 
 (defun map
-  ([coll f]
-    (|>
-      (foldl coll (fun [e acc] (push (f e) acc)) (list))
-      (rev))))
+  ([coll f] (map coll f (list)))
+  ([coll f acc]
+    (if (empty? coll)
+      (rev acc)
+      (map (tail coll) f (push (f (head coll)) acc)))))
 
 (defun filter
-  ([coll p]
-    (|>
-      (foldl coll (fun [e acc]
-        (cond
-          [(p e) (push e acc)]
-          [else acc])) (list))
-      (rev))))
+  ([coll p] (filter coll p (list)))
+  ([coll p acc]
+    (if (empty? coll)
+      (rev acc)
+      (if (p (head coll))
+        (filter (tail coll) p (push (head coll) acc))
+        (filter (tail coll) p acc)))))
+
+(defun filter-map
+  ([coll p f] (filter-map coll p f (list)))
+  ([coll p f acc]
+    (if (empty? coll)
+      (rev acc)
+      (if (p (head coll))
+        (filter-map (tail coll) p f (push (f (head coll)) acc))
+        (filter-map (tail coll) p f acc)))))
 
 (defun join
   ([coll] (join1 coll))
   ([coll delim] (join2 coll delim)))
+
+(defun range
+  ([bound-a bound-b] (range2 bound-a bound-b)))
