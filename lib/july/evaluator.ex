@@ -20,6 +20,10 @@ defmodule July.Evaluator do
       case res do
         closure=%{params: _, body: _, closure: _} ->
           %{value: closure, env: acc.env}
+        closure=%{bodies: _, closure: _} ->
+          %{value: closure, env: acc.env}
+        %{function: function} ->
+          %{value: function, env: acc.env}
         res when is_map(res) ->
           %{value: acc.value, env: res}
         _ ->
