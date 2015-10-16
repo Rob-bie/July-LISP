@@ -171,14 +171,19 @@ defmodule July.Evaluator do
       
     result = eval(function, env)
     case result do
-      built_in=%{function: function} -> # Built-in function
-        case built_in[:variadic] do
-          true ->
+      %{function: func, variadic: true} -> # Built-in function (variadic)
+        args = for arg <- args, do: eval(arg, env)
+        func.(args)
+      %{function: func} -> # Built-in function (non-variadic)
+        {:arity, arity} = :erlang.fun_info(func, :arity)
+        case length(args) != arity do
+          true  ->
+            {name, line_number} = fun_information.(function)
+            throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
+                        <> "but expected <#{arity}> <line: #{line_number}>"})
+          false ->
             args = for arg <- args, do: eval(arg, env)
-            function.(args)
-          _    ->
-            args = for arg <- args, do: eval(arg, env)
-            apply(function, args)
+            apply(func, args)
         end
       %{params: params, body: body, closure: closure, line_number: line_number} -> # fun
         case length(params) != length(args) do
