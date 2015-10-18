@@ -106,40 +106,103 @@ defmodule July.Lexer do
     tokenize(rest, token_acc, [{:keyword, "'", line_number}|tokens], line_number)
   end
 
-  defp tokenize([?i, ?f |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "if", line_number}|tokens], line_number)
+  defp tokenize([?i, ?f, c|rest], token_acc, tokens, line_number) do
+    case c do
+      c when c in '\s\r\t' ->
+        tokenize(rest, token_acc, [{:keyword, "if", line_number}|tokens], line_number)
+      c when c in '\n' ->
+        tokenize(rest, token_acc, [{:keyword, "if", line_number}|tokens], line_number + 1)
+      _ ->
+       symbol_chars(rest, [c, ?f, ?i |token_acc], tokens, line_number)
+    end
   end
 
-  defp tokenize([?c, ?o, ?n, ?d |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "cond", line_number}|tokens], line_number)
+  defp tokenize([?c, ?o, ?n, ?d, c|rest], token_acc, tokens, line_number) do
+    case c do
+      c when c in '\s\r\t' ->
+        tokenize(rest, token_acc, [{:keyword, "cond", line_number}|tokens], line_number)
+      c when c in '\n' ->
+        tokenize(rest, token_acc, [{:keyword, "cond", line_number}|tokens], line_number + 1)
+      _ ->
+        symbol_chars(rest, [c, ?d, ?n, ?o, ?c |token_acc], tokens, line_number)
+    end
   end
 
-  defp tokenize([?f, ?u, ?n |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "fun", line_number}|tokens], line_number)
+  defp tokenize([?f, ?u, ?n, c|rest], token_acc, tokens, line_number) do
+    case c do
+      c when c in '\s\r\t' ->
+        tokenize(rest, token_acc, [{:keyword, "fun", line_number}|tokens], line_number)
+      c when c in '\n' ->
+        tokenize(rest, token_acc, [{:keyword, "fun", line_number}|tokens], line_number + 1)
+      _ ->
+        symbol_chars(rest, [c, ?n, ?u, ?f |token_acc], tokens, line_number)
+    end
   end
 
-  defp tokenize([?d, ?e, ?f, ?u, ?n |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "defun", line_number}|tokens], line_number)
+  defp tokenize([?d, ?e, ?f, ?u, ?n, c|rest], token_acc, tokens, line_number) do
+    case c do
+      c when c in '\s\r\t' ->
+        tokenize(rest, token_acc, [{:keyword, "defun", line_number}|tokens], line_number)
+      c when c in '\n' ->
+        tokenize(rest, token_acc, [{:keyword, "defun", line_number}|tokens], line_number + 1)
+      _ ->
+        symbol_chars(rest, [c, ?n, ?u, ?f, ?e, ?d |token_acc], tokens, line_number)
+    end
   end
 
-  defp tokenize([?d, ?e, ?f |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "def", line_number}|tokens], line_number)
+  defp tokenize([?d, ?e, ?f, c|rest], token_acc, tokens, line_number) do
+    case c do
+      c when c in '\s\r\t' ->
+        tokenize(rest, token_acc, [{:keyword, "def", line_number}|tokens], line_number)
+      c when c in '\n' ->
+        tokenize(rest, token_acc, [{:keyword, "def", line_number}|tokens], line_number + 1)
+      _ ->
+        symbol_chars(rest, [c, ?f, ?e, ?d |token_acc], tokens, line_number)
+    end
   end
 
-  defp tokenize([?l, ?e, ?t |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "let", line_number}|tokens], line_number)
+  defp tokenize([?l, ?e, ?t, c|rest], token_acc, tokens, line_number) do
+    case c do
+      c when c in '\s\r\t' ->
+        tokenize(rest, token_acc, [{:keyword, "let", line_number}|tokens], line_number)
+      c when c in '\n' ->
+        tokenize(rest, token_acc, [{:keyword, "let", line_number}|tokens], line_number + 1)
+      _ ->
+        symbol_chars(rest, [c, ?t, ?e, ?l |token_acc], tokens, line_number)
+    end
   end
 
-  defp tokenize([?|, ?> |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "|>", line_number}|tokens], line_number)
+  defp tokenize([?|, ?>, c|rest], token_acc, tokens, line_number) do
+    case c do
+      c when c in '\s\r\t' ->
+        tokenize(rest, token_acc, [{:keyword, "|>", line_number}|tokens], line_number)
+      c when c in '\n' ->
+        tokenize(rest, token_acc, [{:keyword, "|>", line_number}|tokens], line_number + 1)
+      _ ->
+        symbol_chars(rest, [c, ?>, ?| |token_acc], tokens, line_number)
+    end
   end
 
-  defp tokenize([?l, ?i, ?s, ?t |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "list", line_number}|tokens], line_number)
+  defp tokenize([?l, ?i, ?s, ?t, c|rest], token_acc, tokens, line_number) do
+    case c do
+      c when c in '\s\r\t' ->
+        tokenize(rest, token_acc, [{:keyword, "list", line_number}|tokens], line_number)
+      c when c in '\n' ->
+        tokenize(rest, token_acc, [{:keyword, "list", line_number}|tokens], line_number + 1)
+      _ ->
+        symbol_chars(rest, [c, ?t, ?s, ?i, ?l |token_acc], tokens, line_number)
+    end
   end
 
-  defp tokenize([?i, ?m, ?p, ?o, ?r, ?t |rest], token_acc, tokens, line_number) do
-    tokenize(rest, token_acc, [{:keyword, "import", line_number}|tokens], line_number)
+  defp tokenize([?i, ?m, ?p, ?o, ?r, ?t, c|rest], token_acc, tokens, line_number) do
+    case c do
+      c when c in '\s\r\t' ->
+        tokenize(rest, token_acc, [{:keyword, "import", line_number}|tokens], line_number)
+      c when c in '\n' ->
+        tokenize(rest, token_acc, [{:keyword, "import", line_number}|tokens], line_number + 1)
+      _ ->
+        symbol_chars(rest, [c, ?t, ?r, ?o, ?p, ?m, ?i |token_acc], tokens, line_number)
+    end
   end
 
   # Tokenize a symbol
