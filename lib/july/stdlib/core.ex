@@ -24,6 +24,10 @@ defmodule July.Stdlib.Core do
       "push"   => %{function: &([&1|&2])},
       "show"   => %{function: &IO.puts/1},
       "empty?" => %{function: &(&1 == [])},
+      "str?"   => %{function: &(is_binary(&1))},
+      "num?"   => %{function: &(is_number(&1))},
+      "bool?"  => %{function: &(is_boolean(&1))},
+      "coll?"  => %{function: &(is_list(&1))},
       "else"   => true
      }
   end

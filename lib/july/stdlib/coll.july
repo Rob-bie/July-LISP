@@ -30,6 +30,22 @@
         (filter-map (tail coll) p f (push (f (head coll)) acc))
         (filter-map (tail coll) p f acc)))))
 
+(defun any?
+  ([coll p]
+    (if (p (head coll))
+      #t
+      (if (empty? coll)
+        #f
+        (any? (tail coll) p)))))
+
+(defun all?
+  ([coll p] 
+    (if (p (head coll))
+      (if (empty? (tail coll))
+        #t
+        (all? (tail coll) p))
+      #f)))
+
 (defun join
   ([coll] (join1 coll))
   ([coll delim] (join2 coll delim)))
