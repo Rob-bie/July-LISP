@@ -26,6 +26,8 @@ defmodule July.Evaluator do
           %{value: function, env: acc.env}
         res when is_map(res) ->
           %{value: acc.value, env: res}
+        :ok -> # Ignore IO
+          %{value: acc.value, env: acc.env}
         _ ->
           %{value: res, env: acc.env}
       end
@@ -54,19 +56,28 @@ defmodule July.Evaluator do
   # Evaluate if
   defp eval([{:keyword, "if", line_number}|rest], env) do
     [expr, truthy, falsy] = rest
-    case eval(expr, env) do
+    case res=eval(expr, env) do
       true  -> eval(truthy, env)
       false -> eval(falsy, env)
-      _     -> :to_doc # Throw error here (expression must evaluate to boolean value)
+      _     ->
+        throw({:error, "ERR: <if> condition must evaluate to type <bool> but got <#{res}> "
+                    <> "<line: #{line_number}>"})
     end
   end
 
   # Evaluate cond, short circuit when truthy expression is found
   # Body is evaluated inside of a new scope
   defp eval([{:keyword, "cond", line_number}|rest], env) do
-    [[_|truthy]|_] = Enum.drop_while(rest, fn(p) -> eval(hd(p), env) != true end)
-    {result, _} = eval_all(truthy, create_scope(env))
-    result
+    truthy = Enum.drop_while(rest, fn(p) -> eval(hd(p), env) != true end)
+    case truthy do
+      [] ->
+        throw({:error, "ERR: No <cond> clause evaluated to <#t> "
+                    <> "<line: #{line_number}>"})
+      _  ->
+        [[_|truthy]|_] = truthy
+        {result, _} = eval_all(truthy, env)
+        result
+    end
   end
 
   # Evaluate let, create a new scope with bindings
@@ -76,7 +87,7 @@ defmodule July.Evaluator do
       [{:symbol, symbol, _}, value] = binding
       Dict.put(acc, symbol, eval(value, acc))
     end
-    new_scope = Enum.reduce(bindings, create_scope(env), bind)
+    new_scope = Enum.reduce(bindings, env, bind)
     {result, _} = eval_all(body, new_scope)
     result
   end
@@ -104,7 +115,7 @@ defmodule July.Evaluator do
   end
 
   # Evaluate import, return corresponding environment
-  # A symbol following import keywords indicates a built-in
+  # A symbol following the import keyword indicates a built-in
   # library, a string indicates a path to an external July library
   defp eval([{:keyword, "import", line_number}, july_import], env) do
     import_name = eval(july_import, env)
@@ -114,6 +125,7 @@ defmodule July.Evaluator do
         case import_name do
           :math -> Dict.merge(env, July.Stdlib.Math.import_math)
           :coll -> Dict.merge(env, July.Stdlib.Coll.import_coll)
+          :str  -> Dict.merge(env, July.Stdlib.Str.import_str)
           _ ->
             import_name = import_name |> to_string
             throw({:error, "ERR: <#{import_name}> is not a valid "
@@ -168,52 +180,62 @@ defmodule July.Evaluator do
       {:symbol, name, line_number} -> {"<#{name}>", line_number}
       _ -> {"#<july-closure>", :ignore}
     end
-      
-    result = eval(function, env)
-    case result do
-      %{function: func, variadic: true} -> # Built-in function (variadic)
-        args = for arg <- args, do: eval(arg, env)
-        func.(args)
-      %{function: func} -> # Built-in function (non-variadic)
-        {:arity, arity} = :erlang.fun_info(func, :arity)
-        case length(args) != arity do
-          true  ->
-            {name, line_number} = fun_information.(function)
-            throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
-                        <> "but expected <#{arity}> <line: #{line_number}>"})
-          false ->
-            args = for arg <- args, do: eval(arg, env)
-            apply(func, args)
-        end
-      %{params: params, body: body, closure: closure, line_number: line_number} -> # fun
-        case length(params) != length(args) do
-          true  ->
-            {name, _} = fun_information.(function)
-            throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
-                        <> "but expected <#{length(params)}> <line: #{line_number}>"})
-          false ->
-            args = for arg <- args, do: eval(arg, env)
-            params = for param <- params, do: elem(param, 1)
-            closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
-            eval(body, closure)
-        end
-      %{bodies: bodies, closure: closure} -> # defun
-        match = Enum.drop_while(bodies, fn(body) -> length(args) != length(hd(body)) end)
-        case match do
-          [] ->
-            {name, line_number} = fun_information.(function)
-            arities = Enum.map(bodies, fn(body) -> length(hd(body)) end)
-            arities = "<#{Enum.join(arities, ",")}>"
-            throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
-                        <> "but expected #{arities} <line: #{line_number}>"})
-          _  ->
-            [match|_] = match
-            [params, body] = match
-            args = for arg <- args, do: eval(arg, env)
-            params = for param <- params, do: elem(param, 1)
-            closure = Enum.zip(params, args) |> Enum.into(Map.merge(closure, env))
-            eval(body, closure)
-        end
+
+    {name, line_number} = fun_information.(function)
+
+    try do
+      result = eval(function, env)
+      case result do
+        %{function: func, variadic: true} -> # Built-in function (variadic)
+          args = for arg <- args, do: eval(arg, env)
+          func.(args)
+        %{function: func} -> # Built-in function (non-variadic)
+          {:arity, arity} = :erlang.fun_info(func, :arity)
+          case length(args) != arity do
+            true  ->
+              throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
+                          <> "but expected <#{arity}> <line: #{line_number}>"})
+            false ->
+              args = for arg <- args, do: eval(arg, env)
+              apply(func, args)
+          end
+        %{params: params, body: body, closure: closure, line_number: line_number} -> # fun
+          case length(params) != length(args) do
+            true  ->
+              throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
+                          <> "but expected <#{length(params)}> <line: #{line_number}>"})
+            false ->
+              args = for arg <- args, do: eval(arg, env)
+              params = for param <- params, do: elem(param, 1)
+              closure = Enum.zip(params, args) |> Enum.into(Dict.merge(closure, env))
+              eval(body, closure)
+          end
+        %{bodies: bodies, closure: closure} -> # defun
+          match = Enum.drop_while(bodies, fn(body) -> length(args) != length(hd(body)) end)
+          case match do
+            [] ->
+              arities = Enum.map(bodies, fn(body) -> length(hd(body)) end)
+              arities = "<#{Enum.join(arities, ",")}>"
+              throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
+                          <> "but expected #{arities} <line: #{line_number}>"})
+            _  ->
+              [match|_] = match
+              [params|bodies] = match
+              args = for arg <- args, do: eval(arg, env)
+              params = for param <- params, do: elem(param, 1)
+              closure = Enum.zip(params, args) |> Enum.into(Dict.merge(closure, env))
+              eval_all(bodies, closure)
+          end
+       _ ->
+
+            throw({:error, "ERR: bad argument(s) in #{name} "
+                     <> "<line: #{line_number}>"})
+      end
+    rescue
+      _ in ArithmeticError -> throw({:error, "ERR: bad argument(s) in #{name} "
+                                          <> "<line: #{line_number}>"})
+      _ in ArgumentError   -> throw({:error, "ERR: bad argument(s) in #{name} "
+                                          <> "<line: #{line_number}>"})
     end
   end
 
@@ -222,10 +244,6 @@ defmodule July.Evaluator do
   defp eval({literal, _}, _),          do: literal
   defp eval(literal, _),               do: literal
 
-  # Create a new scope for explicit and implicit *do blocks
-  # * Do has not been implemented yet
-  defp create_scope(env), do: %{outer: env}
- 
   # Unpack values for quote
   defp unpack([], acc), do: Enum.reverse(acc)
 
@@ -234,7 +252,7 @@ defmodule July.Evaluator do
   defp unpack({:keyword, keyword, _}, _), do: keyword
   defp unpack({literal,  _}, _),          do: literal
 
-  defp unpack(list, acc) do
+  defp unpack(list, _) do
     Enum.map(list, &unpack(&1, []))
   end
 
