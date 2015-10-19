@@ -26,7 +26,7 @@ defmodule July.Evaluator do
           %{value: function, env: acc.env}
         res when is_map(res) ->
           %{value: acc.value, env: res}
-        :ok -> # Ignore IO
+        :ok -> # Ignore IO return
           %{value: acc.value, env: acc.env}
         _ ->
           %{value: res, env: acc.env}
@@ -220,14 +220,14 @@ defmodule July.Evaluator do
                           <> "but expected #{arities} <line: #{line_number}>"})
             _  ->
               [match|_] = match
-              [params|bodies] = match
+              [params|defun_bodies] = match
               args = for arg <- args, do: eval(arg, env)
               params = for param <- params, do: elem(param, 1)
               closure = Enum.zip(params, args) |> Enum.into(Dict.merge(closure, env))
-              eval_all(bodies, closure)
+              {result, _} = eval_all(defun_bodies, closure)
+              result
           end
        _ ->
-
             throw({:error, "ERR: bad argument(s) in #{name} "
                      <> "<line: #{line_number}>"})
       end

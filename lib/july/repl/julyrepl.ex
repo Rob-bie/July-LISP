@@ -34,20 +34,8 @@ defmodule July.Repl.JulyRepl do
           :void -> # Don't display void in REPL
             read_input(line_number + 1, new_env, [], [])
           _ ->
-            case is_tuple(result) do # Hacky workaround for closure bug in evaluating a block
-              true ->                # I'd like to get this fixed ASAP, it's really ugly
-                {result, _} = result
-                case result do
-                  :void ->
-                    read_input(line_number + 1, new_env, [], [])
-                  _ ->
-                    July.Repl.Printer.convert(result) |> IO.puts
-                    read_input(line_number + 1, new_env, [], [])
-                end
-              false ->
-                July.Repl.Printer.convert(result) |> IO.puts
-                read_input(line_number + 1, new_env, [], [])
-            end
+            July.Repl.Printer.convert(result) |> IO.puts
+            read_input(line_number + 1, new_env, [], [])
         end
       _ ->
         read_more = IO.gets(offset) |> to_char_list
