@@ -67,6 +67,11 @@ defmodule July.Lexer do
     tokenize(rest, token_acc, [{:r_bracket, "]", line_number}|tokens], line_number)
   end
 
+  # Tokenize a comment
+  defp tokenize([?\; |rest], token_acc, tokens, line_number) do
+    comment(rest, token_acc, tokens, line_number)
+  end
+
   # Tokenize a number OR jump to symbol state for symbol "-"
   defp tokenize([c|rest], token_acc, tokens, line_number) when c in '-0123456789' do
     case c do
@@ -208,6 +213,14 @@ defmodule July.Lexer do
   # Tokenize a symbol
   defp tokenize([c|rest], token_acc, tokens, line_number) do
     symbol_chars(rest, [c|token_acc], tokens, line_number)
+  end
+
+  # Ignore until new line is found
+  defp comment([c|rest], token_acc, tokens, line_number) do
+    case c do
+      ?\n -> tokenize(rest, [], tokens, line_number + 1)
+      _   -> comment(rest, token_acc, tokens, line_number)
+    end
   end
 
   # If a digit is found, prepend it to the token accumulator
