@@ -102,6 +102,7 @@ defmodule July.Lexer do
     tokenize(rest, token_acc, [{:boolean, "#f", line_number}|tokens], line_number)
   end
 
+  # (special forms)
   # Tokenize a keyword (q'|'|if|cond|fun|defun|def|let||>|list|import)
   defp tokenize([?q, ?\' |rest], token_acc, tokens, line_number) do
     tokenize(rest, token_acc, [{:keyword, "q'", line_number}|tokens], line_number)
@@ -113,8 +114,8 @@ defmodule July.Lexer do
 
   defp tokenize([?i, ?f, c|rest], token_acc, tokens, line_number) do
     case c do
-      c when c in '\s\r\t' ->
-        tokenize(rest, token_acc, [{:keyword, "if", line_number}|tokens], line_number)
+      c when c in '\s\r\t[]()' ->
+        tokenize([c|rest], token_acc, [{:keyword, "if", line_number}|tokens], line_number)
       c when c in '\n' ->
         tokenize(rest, token_acc, [{:keyword, "if", line_number}|tokens], line_number + 1)
       _ ->
@@ -124,8 +125,8 @@ defmodule July.Lexer do
 
   defp tokenize([?c, ?o, ?n, ?d, c|rest], token_acc, tokens, line_number) do
     case c do
-      c when c in '\s\r\t' ->
-        tokenize(rest, token_acc, [{:keyword, "cond", line_number}|tokens], line_number)
+      c when c in '\s\r\t[]()' ->
+        tokenize([c|rest], token_acc, [{:keyword, "cond", line_number}|tokens], line_number)
       c when c in '\n' ->
         tokenize(rest, token_acc, [{:keyword, "cond", line_number}|tokens], line_number + 1)
       _ ->
@@ -135,8 +136,8 @@ defmodule July.Lexer do
 
   defp tokenize([?f, ?u, ?n, c|rest], token_acc, tokens, line_number) do
     case c do
-      c when c in '\s\r\t' ->
-        tokenize(rest, token_acc, [{:keyword, "fun", line_number}|tokens], line_number)
+      c when c in '\s\r\t[]()' ->
+        tokenize([c|rest], token_acc, [{:keyword, "fun", line_number}|tokens], line_number)
       c when c in '\n' ->
         tokenize(rest, token_acc, [{:keyword, "fun", line_number}|tokens], line_number + 1)
       _ ->
@@ -146,8 +147,8 @@ defmodule July.Lexer do
 
   defp tokenize([?d, ?e, ?f, ?u, ?n, c|rest], token_acc, tokens, line_number) do
     case c do
-      c when c in '\s\r\t' ->
-        tokenize(rest, token_acc, [{:keyword, "defun", line_number}|tokens], line_number)
+      c when c in '\s\r\t[]()' ->
+        tokenize([c|rest], token_acc, [{:keyword, "defun", line_number}|tokens], line_number)
       c when c in '\n' ->
         tokenize(rest, token_acc, [{:keyword, "defun", line_number}|tokens], line_number + 1)
       _ ->
@@ -157,8 +158,8 @@ defmodule July.Lexer do
 
   defp tokenize([?d, ?e, ?f, c|rest], token_acc, tokens, line_number) do
     case c do
-      c when c in '\s\r\t' ->
-        tokenize(rest, token_acc, [{:keyword, "def", line_number}|tokens], line_number)
+      c when c in '\s\r\t[]()' ->
+        tokenize([c|rest], token_acc, [{:keyword, "def", line_number}|tokens], line_number)
       c when c in '\n' ->
         tokenize(rest, token_acc, [{:keyword, "def", line_number}|tokens], line_number + 1)
       _ ->
@@ -168,8 +169,8 @@ defmodule July.Lexer do
 
   defp tokenize([?l, ?e, ?t, c|rest], token_acc, tokens, line_number) do
     case c do
-      c when c in '\s\r\t' ->
-        tokenize(rest, token_acc, [{:keyword, "let", line_number}|tokens], line_number)
+      c when c in '\s\r\t[]()' ->
+        tokenize([c|rest], token_acc, [{:keyword, "let", line_number}|tokens], line_number)
       c when c in '\n' ->
         tokenize(rest, token_acc, [{:keyword, "let", line_number}|tokens], line_number + 1)
       _ ->
@@ -179,8 +180,8 @@ defmodule July.Lexer do
 
   defp tokenize([?|, ?>, c|rest], token_acc, tokens, line_number) do
     case c do
-      c when c in '\s\r\t' ->
-        tokenize(rest, token_acc, [{:keyword, "|>", line_number}|tokens], line_number)
+      c when c in '\s\r\t[]()' ->
+        tokenize([c|rest], token_acc, [{:keyword, "|>", line_number}|tokens], line_number)
       c when c in '\n' ->
         tokenize(rest, token_acc, [{:keyword, "|>", line_number}|tokens], line_number + 1)
       _ ->
@@ -190,8 +191,8 @@ defmodule July.Lexer do
 
   defp tokenize([?l, ?i, ?s, ?t, c|rest], token_acc, tokens, line_number) do
     case c do
-      c when c in '\s\r\t' ->
-        tokenize(rest, token_acc, [{:keyword, "list", line_number}|tokens], line_number)
+      c when c in '\s\r\t()[]' ->
+        tokenize([c|rest], token_acc, [{:keyword, "list", line_number}|tokens], line_number)
       c when c in '\n' ->
         tokenize(rest, token_acc, [{:keyword, "list", line_number}|tokens], line_number + 1)
       _ ->
@@ -201,8 +202,8 @@ defmodule July.Lexer do
 
   defp tokenize([?i, ?m, ?p, ?o, ?r, ?t, c|rest], token_acc, tokens, line_number) do
     case c do
-      c when c in '\s\r\t' ->
-        tokenize(rest, token_acc, [{:keyword, "import", line_number}|tokens], line_number)
+      c when c in '\s\r\t()[]' ->
+        tokenize([c|rest], token_acc, [{:keyword, "import", line_number}|tokens], line_number)
       c when c in '\n' ->
         tokenize(rest, token_acc, [{:keyword, "import", line_number}|tokens], line_number + 1)
       _ ->
