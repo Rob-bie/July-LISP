@@ -1,9 +1,11 @@
+; coll.july
+
 (defun foldl
-  ([coll f] (foldl (tail coll) f (head coll)))
-  ([coll f acc]
+  ([coll fn] (foldl (tail coll) fn (head coll)))
+  ([coll fn acc]
     (if (empty? coll)
       acc
-      (foldl (tail coll) f (f (head coll) acc)))))
+      (foldl (tail coll) fn (fn (head coll) acc)))))
 
 (defun map
   ([coll f] (map coll f (list)))
@@ -45,6 +47,20 @@
         #t
         (all? (tail coll) p))
       #f)))
+
+(defun max-by
+  ([coll f]
+    (foldl coll (fun [e acc]
+                  (if (> (f e) (f acc))
+                    e
+                    acc)))))
+
+(defun min-by
+  ([coll f]
+    (foldl coll (fun [e acc]
+                  (if (< (f e) (f acc))
+                    e
+                    acc)))))
 
 (defun join
   ([coll] (join1 coll))
