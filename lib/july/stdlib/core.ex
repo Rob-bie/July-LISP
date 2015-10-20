@@ -22,7 +22,6 @@ defmodule July.Stdlib.Core do
       "head"   => %{function: &hd/1},
       "tail"   => %{function: &tl/1},
       "push"   => %{function: &([&1|&2])},
-      "show"   => %{function: &IO.puts/1},
       "empty?" => %{function: &(&1 == [])},
       "str?"   => %{function: &(is_binary(&1))},
       "num?"   => %{function: &(is_number(&1))},

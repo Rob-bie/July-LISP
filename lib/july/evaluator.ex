@@ -155,6 +155,26 @@ defmodule July.Evaluator do
     unpack(rest, [])
   end
 
+  # Evaluate show
+  defp eval([{:keyword, "show", line_number}|rest], env) do
+    expanded = [{:keyword, "<>", line_number}|rest]
+    IO.puts(eval(expanded, env))
+  end
+
+  # Evaluate <>, convert and concatenate arguments
+  defp eval([{:keyword, "<>", line_number}|rest], env) do
+    concat = fn(e, acc) ->
+      case e do
+        {:string, string, _} ->
+          acc <> string
+        _ ->
+          result = eval(e, env) |> July.Repl.Printer.convert
+          acc <> result
+      end
+    end
+    Enum.reduce(rest, "", concat)
+  end
+
   # Look up symbol and return value
   defp eval({:symbol, symbol, line_number}, env) do
     value = lookup_symbol(symbol, env)
