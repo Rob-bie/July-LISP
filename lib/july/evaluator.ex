@@ -125,6 +125,7 @@ defmodule July.Evaluator do
         case import_name do
           :math -> Dict.merge(env, July.Stdlib.Math.import_math)
           :coll -> Dict.merge(env, July.Stdlib.Coll.import_coll)
+          :inou -> Dict.merge(env, July.Stdlib.Inou.import_inou)
           :str  -> Dict.merge(env, July.Stdlib.Str.import_str)
           _ ->
             import_name = import_name |> to_string
