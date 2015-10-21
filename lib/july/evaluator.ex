@@ -119,7 +119,14 @@ defmodule July.Evaluator do
   # library, a string indicates a path to an external July library
   defp eval([{:keyword, "import", line_number}, july_import], env) do
     import_name = eval(july_import, env)
-    import_type = if is_atom(import_name), do: :builtin, else: :external
+    import_type = cond do
+      is_atom(import_name)   -> :builtin
+      is_binary(import_name) -> :external
+      true ->
+        throw({:error, "ERR: Expecting stdlib module or path but got <#{import_name}> "
+                    <> "<line: #{line_number}>"})
+    end
+
     case import_type do
       :builtin  ->
         case import_name do
@@ -130,10 +137,23 @@ defmodule July.Evaluator do
           _ ->
             import_name = import_name |> to_string
             throw({:error, "ERR: <#{import_name}> is not a valid "
-                        <> "stdlib module, did you mean (import \"#{import_name}.july\")?"})
+                        <> "stdlib module, did you mean (import \"#{import_name}.july\")? "
+                        <> "<line: #{line_number}>"})
         end
       :external ->
-        :to_do
+        case String.ends_with?(import_name, ".july") do
+          true  ->
+            content = File.read(import_name)
+            case content do
+              {:error, _}    ->
+                throw({:error, "ERR: Invalid path"})
+              {:ok, content} ->
+                {_, env} = July.Evaluator.eval(content)
+                env
+            end
+          false ->
+            throw({:error, "ERR: File must have extension \".july\""})
+        end
     end
   end
 
@@ -180,7 +200,8 @@ defmodule July.Evaluator do
     value = lookup_symbol(symbol, env)
     case value do
       nil ->
-        throw({:error, "ERR: Symbol <#{symbol}> undefined or out of scope <line: #{line_number}>"})
+        throw({:error, "ERR: Symbol <#{symbol}> undefined or out of scope "
+                    <> "<line: #{line_number}>"})
       _   -> value
     end
   end

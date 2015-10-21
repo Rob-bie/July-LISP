@@ -5,29 +5,30 @@ defmodule July.Stdlib.Core do
 
   def core do
     %{
-      "+"      => %{function: &sum/1, variadic: true},
-      "-"      => %{function: &sub/1, variadic: true},
-      "*"      => %{function: &mul/1, variadic: true},
-      "/"      => %{function: &div/1, variadic: true},
-      "<"      => %{function: &(&1 < &2)},
-      "<="     => %{function: &(&1 <= &2)},
-      ">="     => %{function: &(&1 >= &2)},
-      ">"      => %{function: &(&1 > &2)},
-      "="      => %{function: &(&1 == &2)},
-      "or"     => %{function: &july_or/1, variadic: true},
-      "and"    => %{function: &july_and/1, variadic: true},
-      "not"    => %{function: &(!&1)},
-      "dec"    => %{function: &(&1 - 1)},
-      "inc"    => %{function: &(&1 + 1)},
-      "head"   => %{function: &hd/1},
-      "tail"   => %{function: &tl/1},
-      "push"   => %{function: &([&1|&2])},
-      "empty?" => %{function: &(&1 == [])},
-      "str?"   => %{function: &(is_binary(&1))},
-      "num?"   => %{function: &(is_number(&1))},
-      "bool?"  => %{function: &(is_boolean(&1))},
-      "coll?"  => %{function: &(is_list(&1))},
-      "else"   => true
+      "+"         => %{function: &sum/1, variadic: true},
+      "-"         => %{function: &sub/1, variadic: true},
+      "*"         => %{function: &mul/1, variadic: true},
+      "/"         => %{function: &div/1, variadic: true},
+      "<"         => %{function: &(&1 < &2)},
+      "<="        => %{function: &(&1 <= &2)},
+      ">="        => %{function: &(&1 >= &2)},
+      ">"         => %{function: &(&1 > &2)},
+      "="         => %{function: &(&1 == &2)},
+      "or"        => %{function: &july_or/1, variadic: true},
+      "and"       => %{function: &july_and/1, variadic: true},
+      "not"       => %{function: &(!&1)},
+      "dec"       => %{function: &(&1 - 1)},
+      "inc"       => %{function: &(&1 + 1)},
+      "head"      => %{function: &hd/1},
+      "tail"      => %{function: &tl/1},
+      "push"      => %{function: &([&1|&2])},
+      "empty?"    => %{function: &(&1 == [])},
+      "str?"      => %{function: &(is_binary(&1))},
+      "num?"      => %{function: &(is_number(&1))},
+      "bool?"     => %{function: &(is_boolean(&1))},
+      "coll?"     => %{function: &(is_list(&1))},
+      "eval-file" => %{function: &july_eval_file/1},
+      "else"      => true
      }
   end
 
@@ -54,5 +55,21 @@ defmodule July.Stdlib.Core do
   defp july_or(args) do
     Enum.any?(args, &(&1 == true))
   end
- 
+
+  defp july_eval_file(path) do
+    case String.ends_with?(path, ".july") do
+      true  ->
+        content = File.read(path)
+        case content do
+          {:error, _}    ->
+            throw({:error, "ERR: Invalid path"})
+          {:ok, content} ->
+            {result, _} = July.Evaluator.eval(content)
+            result
+        end
+      false ->
+        throw({:error, "ERR: File must have extension \".july\""})
+    end
+  end
+
 end
