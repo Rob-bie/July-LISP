@@ -164,10 +164,16 @@ defmodule July.Evaluator do
   end
 
   # Evaluate defun, insert function into current environment
-  defp eval([{:keyword, "defun", line_number}|rest], env) do
-    [{:symbol, variable, _}|bodies] = rest
-    val = %{bodies: bodies, closure: env}
-    Dict.put(env, variable, val)
+  defp eval([{:keyword, "defun", line_number}, {:symbol, var, _}|rest], env) do
+    [params|body] = rest
+    cond do
+      params |> hd |> is_list ->
+        val = %{bodies: rest, closure: env}
+        Dict.put(env, var, val)
+      true ->
+        val = %{bodies: [[params|body]], closure: env} # This is not elegant, change this
+        Dict.put(env, var, val)
+    end
   end
 
   # Evaluate q (quote), return following as literal
