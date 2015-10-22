@@ -259,20 +259,23 @@ defmodule July.Evaluator do
               eval(body, closure)
           end
         %{bodies: bodies, closure: closure} -> # defun
-          match = Enum.drop_while(bodies, fn(body) -> length(args) != length(hd(body)) end)
-          case match do
-            [] ->
-              arities = Enum.map(bodies, fn(body) -> length(hd(body)) end)
-              arities = "<#{Enum.join(arities, ",")}>"
+          {params, body} = bind_defun_body(bodies, args, env)
+          case {params, body} do
+            {:error, "ERR: No match"} ->
+              arities = Enum.map(bodies, &hd/1)
+              err_arities = fn(body) ->
+                variadic? = Enum.any?(body, &(match?({:keyword, "~", _}, &1)))
+                case variadic? do
+                  true  -> "~#{length(body) - 1}"
+                  false -> "#{length(body)}"
+                end
+              end
+              arities = "<#{Enum.map(arities, err_arities) |> Enum.join(",")}>"
               throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
-                          <> "but expected #{arities} <line: #{line_number}>"})
-            _  ->
-              [match|_] = match
-              [params|defun_bodies] = match
-              args = for arg <- args, do: eval(arg, env)
-              params = for param <- params, do: elem(param, 1)
-              closure = Enum.zip(params, args) |> Enum.into(Dict.merge(closure, env))
-              {result, _} = eval_all(defun_bodies, closure)
+                          <> "but expected #{arities} <line: #{line_number}"})
+            _ ->
+              closure = params |> Enum.into(Dict.merge(closure, env))
+              {result, _} = eval_all(body, closure)
               result
           end
        _ ->
@@ -291,6 +294,44 @@ defmodule July.Evaluator do
   defp eval({:string, literal, _}, _), do: literal
   defp eval({literal, _}, _),          do: literal
   defp eval(literal, _),               do: literal
+
+  # Match and bind defun args to params
+  defp bind_defun_body([], _, _) do
+    {:error, "ERR: No match"}
+  end
+
+  defp bind_defun_body([[params|body]|rest], args, env) do
+    variadic? = Enum.any?(params, &(match?({:keyword, "~", _}, &1)))
+    case variadic? do
+      true  ->
+        case (length(params) - 1) <= length(args) do
+          true  ->
+            params = for param <- params, do: elem(param, 1)
+            args = for arg <- args, do: eval(arg, env)
+            {bind_variadic(params, args, []), body}
+          false ->
+            bind_defun_body(rest, args, env)
+        end
+      false ->
+        case length(params) == length(args) do
+          true  ->
+            args = for arg <- args, do: eval(arg, env)
+            params = for param <- params, do: elem(param, 1)
+            {Enum.zip(params, args), body}
+          false ->
+            bind_defun_body(rest, args, env)
+        end
+    end
+  end
+
+  defp bind_variadic([p|params], rest=[a|args], acc) do
+    case {p, a} do
+      {"~", _} ->
+        [p|_] = params
+        Enum.reverse([{p, rest}|acc])
+      _ -> bind_variadic(params, args, [{p, a}|acc])
+    end
+  end
 
   # Unpack values for quote
   defp unpack([], acc), do: Enum.reverse(acc)

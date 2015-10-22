@@ -8,7 +8,8 @@ defmodule July.Stdlib.Inou do
      } 
   end
 
-  def import_inou do    inou()
+  def import_inou do
+    inou()
   end
 
 end

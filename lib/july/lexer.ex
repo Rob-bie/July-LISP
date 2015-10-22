@@ -103,13 +103,17 @@ defmodule July.Lexer do
   end
 
   # (special forms)
-  # Tokenize a keyword (q'|'|if|cond|fun|defun|def|let||>|show|<>|list|import)
+  # Tokenize a keyword (q'|'|...|if|cond|fun|defun|def|let||>|show|<>|list|import)
   defp tokenize([?q, ?\' |rest], token_acc, tokens, line_number) do
     tokenize(rest, token_acc, [{:keyword, "q'", line_number}|tokens], line_number)
   end
 
   defp tokenize([?\' |rest], token_acc, tokens, line_number) do
     tokenize(rest, token_acc, [{:keyword, "'", line_number}|tokens], line_number)
+  end
+
+  defp tokenize([?\~ |rest], token_acc, tokens, line_number) do
+    tokenize(rest, token_acc, [{:keyword, "~", line_number}|tokens], line_number)
   end
 
   defp tokenize([?i, ?f, c|rest], token_acc, tokens, line_number) do
