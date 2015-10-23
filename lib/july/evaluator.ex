@@ -176,6 +176,18 @@ defmodule July.Evaluator do
     end
   end
 
+  # Evaluate match
+  defp eval([{:keyword, "match", line_number}, match|rest], env) do
+    match_on = eval(match, env)
+    cond do
+      is_number(match_on)  -> match_literal(match_on, rest, env, line_number)
+      is_binary(match_on)  -> match_literal(match_on, rest, env, line_number)
+      is_boolean(match_on) -> match_literal(match_on, rest, env, line_number)
+      is_atom(match_on)    -> match_literal(match_on, rest, env, line_number)
+      is_list(match_on)    -> match_list(match_on, rest, env, line_number)
+    end
+  end
+
   # Evaluate q (quote), return following as literal
   defp eval([{:keyword, "q'", line_number}, rest], _) do
     unpack(rest, [])
@@ -272,7 +284,7 @@ defmodule July.Evaluator do
               end
               arities = "<#{Enum.map(arities, err_arities) |> Enum.join(",")}>"
               throw({:error, "ERR: #{name} called with <#{length(args)}> arguments "
-                          <> "but expected #{arities} <line: #{line_number}"})
+                          <> "but expected #{arities} <line: #{line_number}>"})
             _ ->
               closure = params |> Enum.into(Dict.merge(closure, env))
               {result, _} = eval_all(body, closure)
@@ -329,7 +341,112 @@ defmodule July.Evaluator do
       {"~", _} ->
         [p|_] = params
         Enum.reverse([{p, rest}|acc])
-      _ -> bind_variadic(params, args, [{p, a}|acc])
+      _ ->
+        bind_variadic(params, args, [{p, a}|acc])
+    end
+  end
+
+  # Matching literals in match
+  defp match_literal(match_on, [], _, line_number) do
+    throw({:error, "ERR: No match for <#{match_on}> <line: #{line_number}>"})
+  end
+
+  defp match_literal(match_on, [[e|body]|rest], env, line_number) do
+    case e do
+      sym=[{:keyword, "q'", _}, _] ->
+        match_literal(match_on, [[eval(sym, env)|body]|rest], env, line_number)
+      e when is_list(e) ->
+        match_literal(match_on, rest, env, line_number)
+      {:symbol, "_", _} ->
+        {result, _} = eval_all(body, env)
+        result
+      {:symbol, var, _} ->
+        new_env = Dict.put(env, var, match_on)
+        {result, _} = eval_all(body, new_env)
+        result
+      _ ->
+        e = eval(e, env)
+        case e == match_on do
+          true  ->
+            {result, _} = eval_all(body, env)
+            result
+          false ->
+            match_literal(match_on, rest, env, line_number)
+        end
+    end
+  end
+
+  defp match_list(match_on, [], _, line_number) do
+    throw({:error, "ERR"})
+  end
+
+  defp match_list(match_on, [[e|body]|rest], env, line_number) do
+     case match_list_helper(match_on, e, env, %{}) do
+       :no_match    ->
+         match_list(match_on, rest, env, line_number)
+       {env, m_env} ->
+         new_env = Dict.merge(m_env, env)
+         {result, _} = eval_all(body, new_env)
+         result
+       env ->
+         {result, _} = eval_all(body, env)
+         result
+     end
+  end
+
+  defp match_list_helper([], [], env, match_env) do
+    {env, match_env}
+  end
+
+  defp match_list_helper(_, [], _, _), do: :no_match
+  
+  defp match_list_helper(match, {:symbol, "_", _}, env, _) do
+    env
+  end
+
+  defp match_list_helper(match, {:symbol, var, _}, env, match_env) do
+    Dict.put(env, var, match)
+  end
+
+  defp match_list_helper([match|rest], [e|m], env, match_env) do
+    case e do
+      sym=[{:keyword, "q'", _}, _] ->
+        match_list_helper([match|rest], [eval(sym, env)|m], env, match_env)
+      e when is_list(e) ->
+        cond do
+          is_list(match) and (length(e) == length(match)) ->
+            result = match_list_helper(match, e, env, match_env)
+            case result do
+              :no_match    -> :no_match
+              {env, m_env} -> match_list_helper(rest, m, env, m_env)
+            end
+          true ->
+            :no_match
+        end
+      {:symbol, "_", _}  ->
+        match_list_helper(rest, m, env, match_env)
+      {:symbol, var, _}  ->
+        case Dict.has_key?(match_env, var) do
+          true  ->
+            value = Dict.get(match_env, var)
+            case match  == value do
+              true  ->
+                match_list_helper(rest, m, env, match_env)
+              false ->
+                :no_match
+            end
+          false ->
+            match_env = Dict.put(match_env, var, match)
+            match_list_helper(rest, m, env, match_env)
+        end
+      _ ->
+        e = eval(e, env)
+        case e == match do
+          true  ->
+            match_list_helper(rest, m, env, match_env)
+          false ->
+            :no_match
+        end
     end
   end
 
