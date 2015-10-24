@@ -1,0 +1,16 @@
+; AUTHOR: (Rob-bie, /u/hutsboR)
+; Solves the classic "FizzBuzz" problem for integers 1-100
+
+(import 'math)
+(import 'coll)
+
+(defun fizzbuzz [n]
+  (match (list (mod-0? n 5) (mod-0? n 3))
+    [(#t #t)  'fizzbuzz]
+    [(#f #t)  'fizz]
+    [(#t #f)  'buzz]
+    [_ n]))
+
+[|>
+  (range 1 100)
+  (map fizzbuzz)]
