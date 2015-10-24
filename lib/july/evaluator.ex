@@ -348,7 +348,7 @@ defmodule July.Evaluator do
 
   # Matching literals in match
   defp match_literal(match_on, [], _, line_number) do
-    throw({:error, "ERR: No match for <#{match_on}> <line: #{line_number}>"})
+    throw({:error, "ERR: No matching clause for <#{match_on}> <line: #{line_number}>"})
   end
 
   defp match_literal(match_on, [[e|body]|rest], env, line_number) do
@@ -377,7 +377,7 @@ defmodule July.Evaluator do
   end
 
   defp match_list(match_on, [], _, line_number) do
-    throw({:error, "ERR"})
+    throw({:error, "ERR: No matching clause for <#{match_on}> <line: #{line_number}>"})
   end
 
   defp match_list(match_on, [[e|body]|rest], env, line_number) do
@@ -385,11 +385,8 @@ defmodule July.Evaluator do
        :no_match    ->
          match_list(match_on, rest, env, line_number)
        {env, m_env} ->
-         new_env = Dict.merge(m_env, env)
+         new_env = Dict.merge(env, m_env)
          {result, _} = eval_all(body, new_env)
-         result
-       env ->
-         {result, _} = eval_all(body, env)
          result
      end
   end
@@ -399,22 +396,32 @@ defmodule July.Evaluator do
   end
 
   defp match_list_helper(_, [], _, _), do: :no_match
+
+  defp match_list_helper([], [{:keyword, "~", _}, {:symbol, var, _}], env, match_env) do
+    match_env = Dict.put(match_env, var, [])
+    {env, match_env}
+  end
+
+  defp match_list_helper([], _, _, _), do: :no_match
   
-  defp match_list_helper(match, {:symbol, "_", _}, env, _) do
-    env
+  defp match_list_helper(match, {:symbol, "_", _}, env, match_env) do
+    {env, match_env}
   end
 
   defp match_list_helper(match, {:symbol, var, _}, env, match_env) do
-    Dict.put(env, var, match)
+    match_env = Dict.put(match_env, var, match)
+    {env, match_env}
   end
 
-  defp match_list_helper([match|rest], [e|m], env, match_env) do
+  defp match_list_helper(full=[match|rest], [e|m], env, match_env) do
     case e do
       sym=[{:keyword, "q'", _}, _] ->
         match_list_helper([match|rest], [eval(sym, env)|m], env, match_env)
       e when is_list(e) ->
+        list_match = is_list(match) and (length(e) == (length(match)))
+        tail_match = is_list(match) and Enum.any?(e, &match?({:keyword, "~", _}, &1))
         cond do
-          is_list(match) and (length(e) == length(match)) ->
+          list_match or tail_match ->
             result = match_list_helper(match, e, env, match_env)
             case result do
               :no_match    -> :no_match
@@ -423,13 +430,17 @@ defmodule July.Evaluator do
           true ->
             :no_match
         end
+      {:keyword, "~", _}  ->
+        [{:symbol, var, _}|_] = m
+        match_env = Dict.put(match_env, var, full)
+        {env, match_env}
       {:symbol, "_", _}  ->
         match_list_helper(rest, m, env, match_env)
       {:symbol, var, _}  ->
         case Dict.has_key?(match_env, var) do
           true  ->
             value = Dict.get(match_env, var)
-            case match  == value do
+            case match == value do
               true  ->
                 match_list_helper(rest, m, env, match_env)
               false ->
