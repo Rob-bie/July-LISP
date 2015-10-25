@@ -84,8 +84,17 @@ defmodule July.Evaluator do
   defp eval([{:keyword, "let", line_number}|rest], env) do
     [bindings|body] = rest
     bind = fn(binding, acc) ->
-      [{:symbol, symbol, _}, value] = binding
-      Dict.put(acc, symbol, eval(value, acc))
+      case binding do
+        [{:symbol, symbol, _}, value] ->
+          Dict.put(acc, symbol, eval(value, acc))
+        [match, value] ->
+         case match_list_helper(eval(value, acc), match, acc, %{}) do
+           {env, m_env} ->
+             Dict.merge(env, m_env)
+           :no_match ->
+             throw({:error, "ERR: No matching clause for <ERR> <line: #{line_number}>"})
+         end
+      end
     end
     new_scope = Enum.reduce(bindings, env, bind)
     {result, _} = eval_all(body, new_scope)
