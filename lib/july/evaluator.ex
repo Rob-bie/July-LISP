@@ -176,6 +176,9 @@ defmodule July.Evaluator do
   defp eval([{:keyword, "defun", line_number}, {:symbol, var, _}|rest], env) do
     [params|body] = rest
     cond do
+      params == [] ->
+        val = %{bodies: rest, closure: env}
+        Dict.put(env, var, val)
       params |> hd |> is_list ->
         val = %{bodies: rest, closure: env}
         Dict.put(env, var, val)
@@ -299,14 +302,15 @@ defmodule July.Evaluator do
               {result, _} = eval_all(body, closure)
               result
           end
-       _ ->
+        _ ->
             throw({:error, "ERR: bad argument(s) in #{name} "
                      <> "<line: #{line_number}>"})
       end
     rescue
       _ in ArithmeticError -> throw({:error, "ERR: bad argument(s) in #{name} "
                                           <> "<line: #{line_number}>"})
-      _ in ArgumentError   -> throw({:error, "ERR: bad argument(s) in #{name} "
+      _ in ArgumentError   ->
+        throw({:error, "ERR: bad argument(s) in #{name} "
                                           <> "<line: #{line_number}>"})
     end
   end
@@ -319,6 +323,10 @@ defmodule July.Evaluator do
   # Match and bind defun args to params
   defp bind_defun_body([], _, _) do
     {:error, "ERR: No match"}
+  end
+
+  defp bind_defun_body([[]|body], [], env) do
+    {[], body}
   end
 
   defp bind_defun_body([[params|body]|rest], args, env) do
