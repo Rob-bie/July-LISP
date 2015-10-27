@@ -1,0 +1,7 @@
+(defun split
+  ([str] (split1 str))
+  ([str delims] (split2 str delims)))
+
+(defun strip
+  ([str] (strip1 str))
+  ([str char] (strip2 str char)))

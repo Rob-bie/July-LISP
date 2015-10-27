@@ -1,0 +1,33 @@
+; AUTHOR: (Rob-bie, /u/hutsboR)
+; A solution for "[2015-10-26] Challenge #238 [Easy] Consonants and Vowels"
+; https://www.reddit.com/r/dailyprogrammer/comments/3q9vpn/
+
+(import 'coll)
+(import 'str)
+
+(def vowels     (str->chars "aeiouy"))
+(def consonants (str->chars "bcdfghjklmnpqrstvwxz"))
+
+(defun transform [word]
+  (match (valid-word? word)
+    [#f 'invalid-word]
+    [#t (swap-letters (str->chars word))]))
+
+(defun valid-word? [word]
+  (all? (str->chars word) (fun [c] (member? '("c" "v" "C" "V") c))))
+
+(defun swap-letters [letters]
+  (defun swap [letter acc]
+    (match letter
+      ["c" (push (rand consonants) acc)]
+      ["v" (push (rand vowels) acc)]
+      ["C" (push (str->upper (rand consonants)) acc)]
+      ["V" (push (str->upper (rand vowels)) acc)]))
+  [|>
+    (foldl letters swap '())
+    (rev)
+    (join)])
+
+[|>
+  '("cvcvcc" "CcvV" "cvcvcvcvcvcvcvcvcv" "abc")
+   (map transform)]

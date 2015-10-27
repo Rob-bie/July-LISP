@@ -1,3 +1,0 @@
-(defun split
-  ([str] (split1 str))
-  ([str delims] (split2 str delims)))

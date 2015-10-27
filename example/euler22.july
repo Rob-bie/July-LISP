@@ -1,0 +1,32 @@
+; AUTHOR: (Rob-bie, /u/hutsboR)
+; A solution for "Names scores" (22)
+; https://projecteuler.net/problem=22
+
+(import 'coll)
+(import 'math)
+(import 'inou)
+(import 'str)
+
+(defun parse-file []
+  [|>
+    (read-file "./example/resource/p022_names.txt") ; read file contents
+    (strip "\"")                                    ; strip leading and trailing quotes
+    (split "\",\"")])                               ; split on ","
+
+; pack each name into list with alphabetical pos
+(defun zip-name-pos [names] (zip names (range 1 (len names))))
+
+(defun score [name]
+  (let ([(name pos) name]) ; pattern match on name and position
+    [|>
+      (str->ascii name)        ; convert each character to ascii value
+      (map (fun [v] (- v 64))) ; subtract offset (64) to get proper alphabetical pos
+      (sum)                    ; sum alphabetical positions
+      (* pos)]))               ; multiply sum by pos in name list
+
+[|>
+  (parse-file)
+  (sort+) ; sort words alphabetically
+  (zip-name-pos)
+  (map score)
+  (sum)]
