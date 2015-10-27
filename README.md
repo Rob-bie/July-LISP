@@ -4,6 +4,8 @@
 
 *July is an experimental, interpretted, lexically-scoped Lisp dialect built in pure Elixir. While not suitable for solving large, real world problems; it is a joy to use for solving tiny problems and great fun to hack on. July is heavily inspired by Scheme, Clojure and Elixir.*
 
+<p align="center"><i>WARNING: Full of fun bugs and bad error messages! (For now...)</i></p>
+
 ###### What does it look like?
 ```
 (import 'math)
